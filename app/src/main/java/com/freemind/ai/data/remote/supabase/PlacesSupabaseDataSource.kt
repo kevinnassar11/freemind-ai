@@ -67,4 +67,7 @@ class PlacesSupabaseDataSource @Inject constructor(
             filter { eq("user_id", userId) }
         }
     }
+
+    suspend fun getTrendingSearches(limit: Int): List<TrendingSearchDto> =
+        supabaseClient.postgrest.rpc("trending_searches", TrendingSearchParamsDto(resultLimit = limit)).decodeList()
 }

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_on_primary">#FFFFFF</color>
+    <color name="brand_primary">#4F46E5</color>
+    <color name="brand_primary_dark">#3730A3</color>
+    <color name="launcher_background">#4F46E5</color>
+    <color name="splash_background_dark">#101014</color>
+    <color name="splash_background_light">#FFFFFF</color>
+    <string name="app_name">FreeMind AI</string>
+    <string name="app_tagline">Find your way, freely.</string>
+    <string name="cancel">Cancel</string>
+    <string name="clear_search_history">Clear search history</string>
+    <string name="clear_search_history_confirm_body">This deletes every saved place search. Favorites are kept. This can\'t be undone.</string>
+    <string name="clear_search_history_confirm_title">Clear all search history?</string>
+    <string name="confirm">Confirm</string>
+    <string name="default_notification_channel_id">freemind_updates</string>
+    <string name="default_notification_channel_name">Updates &amp; tips</string>
+    <string name="default_web_client_id" translatable="false">468378693863-hknp4uevp2gdou0uq0sq666bqtehf811.apps.googleusercontent.com</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_confirm_body">This permanently deletes your profile, search history, and favorites. This can\'t be undone.</string>
+    <string name="delete_account_confirm_title">Delete your account?</string>
+    <string name="delete_search_history_entry">Delete</string>
+    <string name="error_favorite_action_failed">Couldn\'t update favorites. Please try again.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_maps_denied">Maps rejected the request. Check the API key restrictions and that Places API is enabled.</string>
+    <string name="error_maps_not_configured">Maps isn\'t configured yet. Add MAPS_API_KEY to local.properties — see SETUP.md.</string>
+    <string name="error_network">You\'re offline. Check your connection and try again.</string>
+    <string name="error_rate_limited">You\'ve hit the hourly limit. Try again in a bit.</string>
+    <string name="export_empty">Nothing to export yet.</string>
+    <string name="export_favorites">Export favorites (CSV)</string>
+    <string name="export_history">Export search history (CSV)</string>
+    <string name="favorite_content_description">Save to favorites</string>
+    <string name="favorites_empty">Places you save will show up here.</string>
+    <string name="favorites_title">Favorites</string>
+    <string name="gcm_defaultSenderId" translatable="false">468378693863</string>
+    <string name="google_api_key" translatable="false">AIzaSyDxsuDBa8VeG5dcyL6sAuexQwiILRljBLs</string>
+    <string name="google_app_id" translatable="false">1:468378693863:android:b6ec9d7a8959d7a249b242</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDxsuDBa8VeG5dcyL6sAuexQwiILRljBLs</string>
+    <string name="google_storage_bucket" translatable="false">freemind-ai-a9c14.firebasestorage.app</string>
+    <string name="history_empty">Your past searches will show up here.</string>
+    <string name="history_enabled_description">When off, your searches won\'t be recorded at all — nothing new to clear later.</string>
+    <string name="history_enabled_label">Save search history</string>
+    <string name="history_result_subtitle">%1$s • %2$s</string>
+    <string name="history_title">History</string>
+    <string name="maps_clear">Clear search</string>
+    <string name="maps_hint_cities">Start typing a city…</string>
+    <string name="maps_hint_countries">Start typing a country…</string>
+    <string name="maps_hint_culture">Start typing a museum or gallery…</string>
+    <string name="maps_hint_food">Start typing a restaurant…</string>
+    <string name="maps_hint_places">Start typing a place…</string>
+    <string name="maps_hint_prompt">Ask anything about a location</string>
+    <string name="maps_hint_shopping">Start typing a shopping spot…</string>
+    <string name="maps_no_results">No places found for “%1$s”.</string>
+    <string name="maps_results_count">%1$d places</string>
+    <string name="maps_search_placeholder">Search for a place</string>
+    <string name="mode_cities">Cities</string>
+    <string name="mode_countries">Countries</string>
+    <string name="mode_culture">Culture</string>
+    <string name="mode_food">Food</string>
+    <string name="mode_places">Places</string>
+    <string name="mode_prompt">Prompt</string>
+    <string name="mode_shopping">Shopping</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_history">History</string>
+    <string name="nav_maps">Places</string>
+    <string name="nav_settings">Settings</string>
+    <string name="project_id" translatable="false">freemind-ai-a9c14</string>
+    <string name="retry">Retry</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_export">Export your data</string>
+    <string name="settings_title">Settings</string>
+    <string name="sign_in_error">Couldn\'t sign you in. Please try again.</string>
+    <string name="sign_in_subtitle">Sign in to save your searches and favorite places.</string>
+    <string name="sign_in_title">Welcome to FreeMind AI</string>
+    <string name="sign_in_with_google">Continue with Google</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_out_confirm_title">Sign out?</string>
+    <string name="signed_in_as">Signed in as %1$s</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">System default</string>
+    <string name="unfavorite_content_description">Remove from favorites</string>
+    <style name="Theme.FreeMindAI" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/splash_background_light</item>
+    </style>
+    <style name="Theme.FreeMindAI.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background_light</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
+        <item name="postSplashScreenTheme">@style/Theme.FreeMindAI</item>
+    </style>
+</resources>

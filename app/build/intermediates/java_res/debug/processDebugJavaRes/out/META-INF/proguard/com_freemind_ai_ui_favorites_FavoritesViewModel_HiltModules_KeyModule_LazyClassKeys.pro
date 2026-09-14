@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.freemind.ai.ui.favorites.FavoritesViewModel

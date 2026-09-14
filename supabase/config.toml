@@ -1,0 +1,11 @@
+project_id = "freemind-ai"
+
+# This function verifies the Firebase ID token itself (fetches Firebase's
+# JWKS directly - see functions/stamp-role/index.ts) so it can act correctly
+# even before the gateway's own third-party-auth check would recognize the
+# caller as `authenticated` - which is the exact claim this function exists
+# to add in the first place. Everything else on this project (Postgrest,
+# Realtime) goes through the normal Firebase third-party auth integration
+# configured in the Supabase dashboard - see SETUP.md.
+[functions.stamp-role]
+verify_jwt = false

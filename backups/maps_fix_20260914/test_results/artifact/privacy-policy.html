@@ -1,0 +1,378 @@
+<title>FreeMind AI Privacy Policy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --paper: #faf9fc;
+    --paper-raised: #ffffff;
+    --ink: #1e1b2e;
+    --muted: #635f78;
+    --line: #e3e1ed;
+    --accent: #4f46e5;
+    --accent-soft: #eeecfb;
+    --accent-ink: #3730a3;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #16141e;
+      --paper-raised: #1d1a29;
+      --ink: #ece9f7;
+      --muted: #a39fbb;
+      --line: #322e45;
+      --accent: #8b85f5;
+      --accent-soft: #29253c;
+      --accent-ink: #c7c2fb;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #16141e;
+    --paper-raised: #1d1a29;
+    --ink: #ece9f7;
+    --muted: #a39fbb;
+    --line: #322e45;
+    --accent: #8b85f5;
+    --accent-soft: #29253c;
+    --accent-ink: #c7c2fb;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 200px) minmax(0, 680px);
+    gap: 56px;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+  @media (max-width: 780px) {
+    .page { grid-template-columns: 1fr; }
+    .toc { display: none; }
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+  .brand-mark {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    background: var(--accent-soft);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .brand-mark svg { width: 16px; height: 16px; fill: var(--accent); }
+  .brand-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .toc {
+    position: sticky;
+    top: 56px;
+    align-self: start;
+    padding-top: 4px;
+  }
+  .toc-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .toc ol {
+    list-style: none;
+    margin: 0; padding: 0;
+    counter-reset: toc;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .toc li { counter-increment: toc; }
+  .toc a {
+    display: flex;
+    gap: 10px;
+    padding: 7px 10px;
+    margin-left: -10px;
+    border-radius: 7px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.88rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--accent-ink); outline: none; }
+  .toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    opacity: 0.7;
+  }
+
+  main { min-width: 0; }
+
+  h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 700;
+    font-size: 2.5rem;
+    line-height: 1.12;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+    font-size: 0.86rem;
+    color: var(--muted);
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
+  .updated-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.76rem;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+
+  .lede {
+    font-size: 1.08rem;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0 0 48px;
+  }
+
+  section { margin-bottom: 44px; scroll-margin-top: 32px; }
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    margin: 0 0 16px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    text-wrap: balance;
+  }
+  section:first-of-type h2 { border-top: none; padding-top: 0; }
+
+  p { max-width: 66ch; margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .card h3 {
+    font-size: 0.78rem;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin: 0 0 10px;
+  }
+  .card ul { margin: 0; padding-left: 18px; }
+  .card li { margin-bottom: 6px; font-size: 0.94rem; }
+  .card li:last-child { margin-bottom: 0; }
+
+  .not-collected {
+    border-left: 3px solid var(--line);
+    padding: 4px 0 4px 16px;
+    color: var(--muted);
+    font-size: 0.94rem;
+    margin: 18px 0;
+  }
+  .not-collected li { margin-bottom: 4px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 0.94rem;
+  }
+  caption { text-align: left; margin-bottom: 8px; }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  td.yes { color: var(--accent-ink); font-weight: 500; }
+
+  .service-list { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
+  .service {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .service strong { font-size: 0.96rem; }
+  .service span { font-size: 0.86rem; color: var(--muted); text-align: right; }
+
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 500;
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn:hover { filter: brightness(1.04); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: 0.84rem;
+    color: var(--muted);
+  }
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="Sections">
+    <p class="toc-label">Contents</p>
+    <ol>
+      <li><a href="#collect">What we collect</a></li>
+      <li><a href="#use">How it's used</a></li>
+      <li><a href="#store">Where it's stored</a></li>
+      <li><a href="#third-party">Third parties</a></li>
+      <li><a href="#retention">Retention &amp; deletion</a></li>
+      <li><a href="#children">Children's privacy</a></li>
+      <li><a href="#changes">Changes</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg>
+      </span>
+      <span class="brand-name">FreeMind AI</span>
+    </div>
+
+    <h1>Privacy Policy</h1>
+    <div class="meta">
+      <span class="updated-badge">Last updated Sep 14, 2026</span>
+      <span class="dot"></span>
+      <span>Applies to the FreeMind AI Android app</span>
+    </div>
+    <p class="lede">FreeMind AI helps you search places, save favorites, and keep a private history of your searches. This policy explains exactly what we collect, why, and how to remove it.</p>
+
+    <section id="collect">
+      <h2>What we collect</h2>
+      <p>Two kinds of data: what your Google account hands us at sign-in, and what the app itself generates as you use it.</p>
+      <div class="card-grid">
+        <div class="card">
+          <h3>From sign-in</h3>
+          <ul>
+            <li>Email address</li>
+            <li>Display name</li>
+            <li>Profile photo URL</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>From using the app</h3>
+          <ul>
+            <li>Searches — query text, mode, and top result <code>place_search_history</code></li>
+            <li>Saved places — name, address, coordinates <code>favorite_places</code></li>
+            <li>Theme preference &amp; notification token</li>
+          </ul>
+        </div>
+      </div>
+      <ul class="not-collected">
+        <li>No precise real-time location — search is text-based, not GPS-driven</li>
+        <li>No payment information — the app has no purchases</li>
+        <li>Nothing purchased or collected from third-party data brokers</li>
+      </ul>
+    </section>
+
+    <section id="use">
+      <h2>How it's used</h2>
+      <p>Strictly to run the app for you: showing your own history and favorites back to you, keeping your session signed in, and — only if you've turned them on — sending update notifications. We do not sell data, and we do not share it for advertising.</p>
+    </section>
+
+    <section id="store">
+      <h2>Where it's stored</h2>
+      <p>App data lives in a Supabase-hosted PostgreSQL database with row-level security enabled on every table — each query is scoped to your own authenticated user ID by policy, at the database layer, not just in the app's code. Sign-in itself is handled by Firebase Authentication.</p>
+    </section>
+
+    <section id="third-party">
+      <h2>Third-party services</h2>
+      <div class="service-list">
+        <div class="service"><strong>Firebase Authentication</strong><span>Google sign-in</span></div>
+        <div class="service"><strong>Google Maps SDK &amp; Places API</strong><span>Map rendering &amp; place search</span></div>
+        <div class="service"><strong>Supabase</strong><span>Search history, favorites, profile storage</span></div>
+      </div>
+      <p>Each provider processes data under its own privacy policy for the portion that runs on its platform.</p>
+    </section>
+
+    <section id="retention">
+      <h2>Retention &amp; deletion</h2>
+      <p>You can permanently delete your account and everything tied to it at any time, from <strong>Settings → Delete account</strong> in the app. This can't be undone. Full instructions, including a route that doesn't require the app, are on the <a href="account-deletion.html" style="color:var(--accent-ink)">account deletion page</a>.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="account-deletion.html">How to delete your data →</a>
+      </div>
+    </section>
+
+    <section id="children">
+      <h2>Children's privacy</h2>
+      <p>FreeMind AI isn't directed at children under 13, and we don't knowingly collect data from anyone under 13.</p>
+    </section>
+
+    <section id="changes">
+      <h2>Changes to this policy</h2>
+      <p>If this policy changes materially, we'll update the date at the top of this page.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>Questions about this policy: <strong>support@freemind.ai</strong></p>
+    </section>
+
+    <footer>FreeMind AI — Privacy Policy</footer>
+  </main>
+</div>

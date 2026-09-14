@@ -1,0 +1,120 @@
+﻿--------- beginning of main
+09-14 18:42:05.347   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.353   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.423   556   556 I adbd    : adbd service requested 'shell,v2,raw:input tap 944 2023'
+09-14 18:42:05.444   711  1750 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 16
+09-14 18:42:05.444   711  1848 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 16
+09-14 18:42:05.445   523   554 D AudioFlinger: mixer(0x71ab6ef6f790) throttle end: throttle time(37)
+09-14 18:42:05.482   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.488   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.497   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.515   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.530   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.547   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.565   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.581   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.588   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.597   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.605   523   547 I APM_AudioPolicyManager: getNewOutputDevices io 13 recent device override {AUDIO_DEVICE_OUT_SPEAKER, @:}
+09-14 18:42:05.614   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.631   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.647   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.665   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.680   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.690   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.698   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.714   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.731   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.747   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.765   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.780   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.792   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.798   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.814   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.832   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.847   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.864   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.880   711   908 E WifiDataStall: Ignore this poll. newStats: null txLinkSpeedMbps: 1 rxLinkSpeedMbps: 2 rssi: -50 connectionCapabilities: com.android.server.wifi.WifiNative$ConnectionCapabilities@a5f2fb2
+09-14 18:42:05.881   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.893   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.897   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.914   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.931   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.948   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.964   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.982   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:05.997   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.003   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.014   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.031   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.048   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.064   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.080   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.097   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.103   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.114   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.130   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.149   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.165   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.181   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.198   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.205   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.214   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.231   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.249   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.265   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.280   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.297   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.306   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.314   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.331   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.347   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.365   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.389  1157  1303 E SatelliteController: isSatelliteEnabled: mIsSatelliteEnabled=null
+09-14 18:42:06.389  1157  1303 D SatelliteController: isInCarrierRoamingNbIotNtn: satellite is disabled
+09-14 18:42:06.389  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectType: Checking connect type from PLMN config for subId: 1
+09-14 18:42:06.389  1157  1303 D TelephonyConfigUpdateInstallReceiver: getConfigParser: domain=satellite
+09-14 18:42:06.389  1157  1303 V SatelliteController: satelliteConfigParser is not ready
+09-14 18:42:06.389  1157  1303 D SatelliteController: isSatelliteAttachSupportedViaConfigupdater: return null (satelliteConfig is null)
+09-14 18:42:06.389  1157  1303 D SatelliteController: getConfigForSubId: subId= 1, config= PersistableBundle[{satellite_esos_supported_bool=false, satellite_connection_hysteresis_sec_int=180, satellite_supported_disaster_plmn_string_array=[], regional_satellite_earfcn_bundle=PersistableBundle[{}], satellite_entitlement_supported_bool=false, satellite_supported_emergency_plmn_string_array=[], satellite_configs_per_plmn_bundle=PersistableBundle[{}], satellite_sos_max_datagram_size_bytes_int=255, satellite_supported_msg_apps_string_array=[com.google.android.apps.messaging], satellite_connected_notification_throttle_millis_int=604800000, satellite_display_name_string=, satellite_roaming_p2p_sms_inactivity_timeout_sec_int=180, satellite_roaming_turn_off_session_for_emergency_call_bool=true, emergency_messaging_supported_bool=false, carrier_roaming_satellite_emergency_messaging_provider_per_country_bundle=PersistableBundle[{}], satellite_data_support_mode_int=0, carrier_roaming_ntn_connect_type_int=0, satellite_attach_supported_bool=false, carrier_roaming_satellite_emergency_messaging_redirection_destination_string=, satellite_nidd_apn_name_string=, carrier_supported_satellite_services_per_provider_bundle=PersistableBundle[{310830=[2, 3, 6]}], satellite_roaming_esos_inactivity_timeout_sec_int=300, carrier_supported_satellite_notification_hysteresis_sec_int=180, carrier_config_applied_bool=true, carrier_roaming_ntn_emergency_call_to_satellite_handover_type_int=2, carrier_roaming_satellite_default_services_int_array=[2, 3, 6], imsserviceentitlement.entitlement_server_url_string=, emergency_call_to_satellite_t911_handover_timeout_millis_int=30000, satellite_roaming_p2p_sms_supported_bool=false, carrier_config_version_string=, satellite_roaming_screen_off_inactivity_timeout_sec_int=30}]
+09-14 18:42:06.389  1157  1303 D SatelliteController: isSatelliteSupportedViaCarrier: using CarrierConfig for subId=1, isAttachSupported=false
+09-14 18:42:06.389  1157  1303 D SatelliteController: getSatellitePerPlmnConfiguration: invalid subId or not supported via carrier.
+09-14 18:42:06.389  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectType: config: null
+09-14 18:42:06.389  1157  1303 D TelephonyConfigUpdateInstallReceiver: getConfigParser: domain=satellite
+09-14 18:42:06.390  1157  1303 V SatelliteController: satelliteConfigParser is not ready
+09-14 18:42:06.390  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectTypeViaConfigUpdater: return null (satelliteConfig is null)
+09-14 18:42:06.390  1157  1303 D SatelliteController: getConfigForSubId: subId= 1, config= PersistableBundle[{satellite_esos_supported_bool=false, satellite_connection_hysteresis_sec_int=180, satellite_supported_disaster_plmn_string_array=[], regional_satellite_earfcn_bundle=PersistableBundle[{}], satellite_entitlement_supported_bool=false, satellite_supported_emergency_plmn_string_array=[], satellite_configs_per_plmn_bundle=PersistableBundle[{}], satellite_sos_max_datagram_size_bytes_int=255, satellite_supported_msg_apps_string_array=[com.google.android.apps.messaging], satellite_connected_notification_throttle_millis_int=604800000, satellite_display_name_string=, satellite_roaming_p2p_sms_inactivity_timeout_sec_int=180, satellite_roaming_turn_off_session_for_emergency_call_bool=true, emergency_messaging_supported_bool=false, carrier_roaming_satellite_emergency_messaging_provider_per_country_bundle=PersistableBundle[{}], satellite_data_support_mode_int=0, carrier_roaming_ntn_connect_type_int=0, satellite_attach_supported_bool=false, carrier_roaming_satellite_emergency_messaging_redirection_destination_string=, satellite_nidd_apn_name_string=, carrier_supported_satellite_services_per_provider_bundle=PersistableBundle[{310830=[2, 3, 6]}], satellite_roaming_esos_inactivity_timeout_sec_int=300, carrier_supported_satellite_notification_hysteresis_sec_int=180, carrier_config_applied_bool=true, carrier_roaming_ntn_emergency_call_to_satellite_handover_type_int=2, carrier_roaming_satellite_default_services_int_array=[2, 3, 6], imsserviceentitlement.entitlement_server_url_string=, emergency_call_to_satellite_t911_handover_timeout_millis_int=30000, satellite_roaming_p2p_sms_supported_bool=false, carrier_config_version_string=, satellite_roaming_screen_off_inactivity_timeout_sec_int=30}]
+09-14 18:42:06.390  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+09-14 18:42:06.390  1157  1303 D TelephonyConfigUpdateInstallReceiver: getConfigParser: domain=satellite
+09-14 18:42:06.390  1157  1303 V SatelliteController: satelliteConfigParser is not ready
+09-14 18:42:06.390  1157  1303 D SatelliteController: isSatelliteAttachSupportedViaConfigupdater: return null (satelliteConfig is null)
+09-14 18:42:06.390  1157  1303 D SatelliteController: getConfigForSubId: subId= 1, config= PersistableBundle[{satellite_esos_supported_bool=false, satellite_connection_hysteresis_sec_int=180, satellite_supported_disaster_plmn_string_array=[], regional_satellite_earfcn_bundle=PersistableBundle[{}], satellite_entitlement_supported_bool=false, satellite_supported_emergency_plmn_string_array=[], satellite_configs_per_plmn_bundle=PersistableBundle[{}], satellite_sos_max_datagram_size_bytes_int=255, satellite_supported_msg_apps_string_array=[com.google.android.apps.messaging], satellite_connected_notification_throttle_millis_int=604800000, satellite_display_name_string=, satellite_roaming_p2p_sms_inactivity_timeout_sec_int=180, satellite_roaming_turn_off_session_for_emergency_call_bool=true, emergency_messaging_supported_bool=false, carrier_roaming_satellite_emergency_messaging_provider_per_country_bundle=PersistableBundle[{}], satellite_data_support_mode_int=0, carrier_roaming_ntn_connect_type_int=0, satellite_attach_supported_bool=false, carrier_roaming_satellite_emergency_messaging_redirection_destination_string=, satellite_nidd_apn_name_string=, carrier_supported_satellite_services_per_provider_bundle=PersistableBundle[{310830=[2, 3, 6]}], satellite_roaming_esos_inactivity_timeout_sec_int=300, carrier_supported_satellite_notification_hysteresis_sec_int=180, carrier_config_applied_bool=true, carrier_roaming_ntn_emergency_call_to_satellite_handover_type_int=2, carrier_roaming_satellite_default_services_int_array=[2, 3, 6], imsserviceentitlement.entitlement_server_url_string=, emergency_call_to_satellite_t911_handover_timeout_millis_int=30000, satellite_roaming_p2p_sms_supported_bool=false, carrier_config_version_string=, satellite_roaming_screen_off_inactivity_timeout_sec_int=30}]
+09-14 18:42:06.390  1157  1303 D SatelliteController: isSatelliteSupportedViaCarrier: using CarrierConfig for subId=1, isAttachSupported=false
+09-14 18:42:06.390  1157  1303 D SatelliteController: isInSatelliteModeForCarrierRoaming: subId=1, connectType=0, result=false
+09-14 18:42:06.390  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectType: Checking connect type from PLMN config for subId: 1
+09-14 18:42:06.390  1157  1303 D TelephonyConfigUpdateInstallReceiver: getConfigParser: domain=satellite
+09-14 18:42:06.390  1157  1303 V SatelliteController: satelliteConfigParser is not ready
+09-14 18:42:06.390  1157  1303 D SatelliteController: isSatelliteAttachSupportedViaConfigupdater: return null (satelliteConfig is null)
+09-14 18:42:06.391  1157  1303 D SatelliteController: getConfigForSubId: subId= 1, config= PersistableBundle[{satellite_esos_supported_bool=false, satellite_connection_hysteresis_sec_int=180, satellite_supported_disaster_plmn_string_array=[], regional_satellite_earfcn_bundle=PersistableBundle[{}], satellite_entitlement_supported_bool=false, satellite_supported_emergency_plmn_string_array=[], satellite_configs_per_plmn_bundle=PersistableBundle[{}], satellite_sos_max_datagram_size_bytes_int=255, satellite_supported_msg_apps_string_array=[com.google.android.apps.messaging], satellite_connected_notification_throttle_millis_int=604800000, satellite_display_name_string=, satellite_roaming_p2p_sms_inactivity_timeout_sec_int=180, satellite_roaming_turn_off_session_for_emergency_call_bool=true, emergency_messaging_supported_bool=false, carrier_roaming_satellite_emergency_messaging_provider_per_country_bundle=PersistableBundle[{}], satellite_data_support_mode_int=0, carrier_roaming_ntn_connect_type_int=0, satellite_attach_supported_bool=false, carrier_roaming_satellite_emergency_messaging_redirection_destination_string=, satellite_nidd_apn_name_string=, carrier_supported_satellite_services_per_provider_bundle=PersistableBundle[{310830=[2, 3, 6]}], satellite_roaming_esos_inactivity_timeout_sec_int=300, carrier_supported_satellite_notification_hysteresis_sec_int=180, carrier_config_applied_bool=true, carrier_roaming_ntn_emergency_call_to_satellite_handover_type_int=2, carrier_roaming_satellite_default_services_int_array=[2, 3, 6], imsserviceentitlement.entitlement_server_url_string=, emergency_call_to_satellite_t911_handover_timeout_millis_int=30000, satellite_roaming_p2p_sms_supported_bool=false, carrier_config_version_string=, satellite_roaming_screen_off_inactivity_timeout_sec_int=30}]
+09-14 18:42:06.391  1157  1303 D SatelliteController: isSatelliteSupportedViaCarrier: using CarrierConfig for subId=1, isAttachSupported=false
+09-14 18:42:06.391  1157  1303 D SatelliteController: getSatellitePerPlmnConfiguration: invalid subId or not supported via carrier.
+09-14 18:42:06.391  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectType: config: null
+09-14 18:42:06.391  1157  1303 D TelephonyConfigUpdateInstallReceiver: getConfigParser: domain=satellite
+09-14 18:42:06.391  1157  1303 V SatelliteController: satelliteConfigParser is not ready
+09-14 18:42:06.391  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectTypeViaConfigUpdater: return null (satelliteConfig is null)
+09-14 18:42:06.391  1157  1303 D SatelliteController: getConfigForSubId: subId= 1, config= PersistableBundle[{satellite_esos_supported_bool=false, satellite_connection_hysteresis_sec_int=180, satellite_supported_disaster_plmn_string_array=[], regional_satellite_earfcn_bundle=PersistableBundle[{}], satellite_entitlement_supported_bool=false, satellite_supported_emergency_plmn_string_array=[], satellite_configs_per_plmn_bundle=PersistableBundle[{}], satellite_sos_max_datagram_size_bytes_int=255, satellite_supported_msg_apps_string_array=[com.google.android.apps.messaging], satellite_connected_notification_throttle_millis_int=604800000, satellite_display_name_string=, satellite_roaming_p2p_sms_inactivity_timeout_sec_int=180, satellite_roaming_turn_off_session_for_emergency_call_bool=true, emergency_messaging_supported_bool=false, carrier_roaming_satellite_emergency_messaging_provider_per_country_bundle=PersistableBundle[{}], satellite_data_support_mode_int=0, carrier_roaming_ntn_connect_type_int=0, satellite_attach_supported_bool=false, carrier_roaming_satellite_emergency_messaging_redirection_destination_string=, satellite_nidd_apn_name_string=, carrier_supported_satellite_services_per_provider_bundle=PersistableBundle[{310830=[2, 3, 6]}], satellite_roaming_esos_inactivity_timeout_sec_int=300, carrier_supported_satellite_notification_hysteresis_sec_int=180, carrier_config_applied_bool=true, carrier_roaming_ntn_emergency_call_to_satellite_handover_type_int=2, carrier_roaming_satellite_default_services_int_array=[2, 3, 6], imsserviceentitlement.entitlement_server_url_string=, emergency_call_to_satellite_t911_handover_timeout_millis_int=30000, satellite_roaming_p2p_sms_supported_bool=false, carrier_config_version_string=, satellite_roaming_screen_off_inactivity_timeout_sec_int=30}]
+09-14 18:42:06.391  1157  1303 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+09-14 18:42:06.391  1157  1303 D TelephonyConfigUpdateInstallReceiver: getConfigParser: domain=satellite
+09-14 18:42:06.391  1157  1303 V SatelliteController: satelliteConfigParser is not ready
+09-14 18:42:06.391  1157  1303 D SatelliteController: isSatelliteAttachSupportedViaConfigupdater: return null (satelliteConfig is null)
+09-14 18:42:06.391  1157  1303 D SatelliteController: getConfigForSubId: subId= 1, config= PersistableBundle[{satellite_esos_supported_bool=false, satellite_connection_hysteresis_sec_int=180, satellite_supported_disaster_plmn_string_array=[], regional_satellite_earfcn_bundle=PersistableBundle[{}], satellite_entitlement_supported_bool=false, satellite_supported_emergency_plmn_string_array=[], satellite_configs_per_plmn_bundle=PersistableBundle[{}], satellite_sos_max_datagram_size_bytes_int=255, satellite_supported_msg_apps_string_array=[com.google.android.apps.messaging], satellite_connected_notification_throttle_millis_int=604800000, satellite_display_name_string=, satellite_roaming_p2p_sms_inactivity_timeout_sec_int=180, satellite_roaming_turn_off_session_for_emergency_call_bool=true, emergency_messaging_supported_bool=false, carrier_roaming_satellite_emergency_messaging_provider_per_country_bundle=PersistableBundle[{}], satellite_data_support_mode_int=0, carrier_roaming_ntn_connect_type_int=0, satellite_attach_supported_bool=false, carrier_roaming_satellite_emergency_messaging_redirection_destination_string=, satellite_nidd_apn_name_string=, carrier_supported_satellite_services_per_provider_bundle=PersistableBundle[{310830=[2, 3, 6]}], satellite_roaming_esos_inactivity_timeout_sec_int=300, carrier_supported_satellite_notification_hysteresis_sec_int=180, carrier_config_applied_bool=true, carrier_roaming_ntn_emergency_call_to_satellite_handover_type_int=2, carrier_roaming_satellite_default_services_int_array=[2, 3, 6], imsserviceentitlement.entitlement_server_url_string=, emergency_call_to_satellite_t911_handover_timeout_millis_int=30000, satellite_roaming_p2p_sms_supported_bool=false, carrier_config_version_string=, satellite_roaming_screen_off_inactivity_timeout_sec_int=30}]
+09-14 18:42:06.391  1157  1303 D SatelliteController: isSatelliteSupportedViaCarrier: using CarrierConfig for subId=1, isAttachSupported=false
+09-14 18:42:06.391  1157  1303 D SatelliteController: isInSatelliteModeForCarrierRoaming: subId=1, connectType=0, result=false
+09-14 18:42:06.406   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.864   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:06.869   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:07.022  5011  5011 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.shutdownVoiceInternal():152 shutdownVoiceInternal() [RD]
+09-14 18:42:07.022  5011  5011 W NotificationCenter: NotificationCenter.unregisterListener():480 Listener jfi@10c6839 was not registered for notification class pmg
+09-14 18:42:07.365   530   530 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:07.370   530   580 W skia    : AGTM parsing failed flags.readFromStream(s) at 159
+09-14 18:42:07.528   556   556 I adbd    : adbd service requested 'shell,v2:export ANDROID_LOG_TAGS=''; exec logcat '-d''

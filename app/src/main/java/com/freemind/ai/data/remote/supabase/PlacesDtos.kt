@@ -48,3 +48,14 @@ data class NewFavoritePlaceDto(
     val latitude: Double? = null,
     val longitude: Double? = null,
 )
+
+@Serializable
+data class TrendingSearchDto(
+    val query: String,
+    @SerialName("search_count") val searchCount: Long,
+)
+
+@Serializable
+data class TrendingSearchParamsDto(
+    @SerialName("result_limit") val resultLimit: Int,
+)

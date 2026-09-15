@@ -1,37 +1,173 @@
 package com.freemind.ai.data.repository
 
 import android.util.Log
+import com.freemind.ai.data.local.CachedPlaceSearchEntity
 import com.freemind.ai.data.local.PendingFavoriteAction
 import com.freemind.ai.data.local.PendingFavoriteQueue
+import com.freemind.ai.data.local.PlaceSearchCacheDao
 import com.freemind.ai.data.remote.places.PlacesDataSource
+import com.freemind.ai.data.remote.supabase.ItineraryEdgeFunctionClient
 import com.freemind.ai.data.remote.supabase.NewFavoritePlaceDto
 import com.freemind.ai.data.remote.supabase.NewPlaceSearchHistoryDto
 import com.freemind.ai.data.remote.supabase.PlacesSupabaseDataSource
 import com.freemind.ai.data.remote.supabase.toDomain
+import com.freemind.ai.domain.model.DeviceLocation
 import com.freemind.ai.domain.model.FavoritePlace
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.PlaceSearchHistoryEntry
 import com.freemind.ai.domain.model.PlaceSearchMode
+import com.freemind.ai.domain.model.TrendingSearch
 import com.freemind.ai.util.AppError
 import com.freemind.ai.util.AppResult
+import com.freemind.ai.util.isKnownCountryName
 import io.github.jan.supabase.exceptions.HttpRequestException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "FreeMindPlaces"
+private const val CACHE_TTL_MS = 24L * 60 * 60 * 1000
 
 @Singleton
 class PlacesRepositoryImpl @Inject constructor(
     private val placesDataSource: PlacesDataSource,
     private val placesSupabaseDataSource: PlacesSupabaseDataSource,
     private val pendingFavoriteQueue: PendingFavoriteQueue,
+    private val placeSearchCacheDao: PlaceSearchCacheDao,
+    private val itineraryEdgeFunctionClient: ItineraryEdgeFunctionClient,
+    private val itineraryComposer: ItineraryComposer,
 ) : PlacesRepository {
 
-    override suspend fun searchPlaces(query: String, mode: PlaceSearchMode): AppResult<List<PlaceResult>> =
-        placesDataSource.searchPlaces(query, mode.placeType)
+    private val json = Json { ignoreUnknownKeys = true }
+
+    override suspend fun searchPlaces(
+        query: String,
+        mode: PlaceSearchMode,
+        bias: DeviceLocation?,
+    ): AppResult<PlaceSearchResult> {
+        val resolution = resolveQueryForMode(query, mode)
+        if (resolution is QueryResolution.Invalid) {
+            return AppResult.Failure(AppError.Unknown(resolution.message))
+        }
+        val effectiveQuery = (resolution as QueryResolution.Valid).query
+
+        val key = cacheKey(query, mode, bias)
+        val liveResult = placesDataSource.searchPlaces(effectiveQuery, mode.placeType, bias)
+        return when (liveResult) {
+            is AppResult.Success -> {
+                placeSearchCacheDao.upsert(
+                    CachedPlaceSearchEntity(
+                        cacheKey = key,
+                        query = query,
+                        mode = mode.name,
+                        resultsJson = json.encodeToString(liveResult.data),
+                        cachedAt = System.currentTimeMillis(),
+                    ),
+                )
+                AppResult.Success(PlaceSearchResult(liveResult.data, isFromCache = false))
+            }
+            is AppResult.Failure -> {
+                // Only a connectivity failure falls back to cache - a rate limit,
+                // an unauthorized key, etc. should still surface as a real error
+                // rather than silently showing possibly-stale results.
+                if (liveResult.error != AppError.Network) return liveResult
+                val cached = placeSearchCacheDao.get(key)
+                val isFresh = cached != null && System.currentTimeMillis() - cached.cachedAt < CACHE_TTL_MS
+                if (cached == null || !isFresh) return liveResult
+                val cachedResults = runCatching { json.decodeFromString<List<PlaceResult>>(cached.resultsJson) }
+                    .getOrNull() ?: return liveResult
+                AppResult.Success(PlaceSearchResult(cachedResults, isFromCache = true))
+            }
+        }
+    }
+
+    /**
+     * The same words mean different results in different places ("coffee near me" in
+     * Beirut vs. Paris), so the area is part of the key - rounded to about 11 km so
+     * walking down the street doesn't miss the cache on every search.
+     */
+    private fun cacheKey(query: String, mode: PlaceSearchMode, bias: DeviceLocation?): String {
+        val area = bias?.let { "|%.1f,%.1f".format(it.latitude, it.longitude) } ?: ""
+        return "${mode.name}|${query.trim().lowercase()}$area"
+    }
+
+    /**
+     * `generate-itinerary` isn't deployed (no Anthropic API key - see that function's
+     * header comment), so this falls back to composing a real itinerary from live
+     * Places results ([ItineraryComposer]) whenever the Edge Function call doesn't
+     * succeed. The moment that key is added and the function is deployed, this starts
+     * returning genuine Claude-generated text with no code change needed here - though
+     * only the local composer populates [ItineraryResult.places]/[ItineraryResult.destination],
+     * since the Edge Function returns free text with no structured place data.
+     */
+    override suspend fun generateItinerary(prompt: String): AppResult<ItineraryResult> {
+        val edgeResult = itineraryEdgeFunctionClient.generateItinerary(prompt)
+        if (edgeResult is AppResult.Success) {
+            return AppResult.Success(ItineraryResult(text = edgeResult.data, places = emptyList(), destination = null))
+        }
+        return itineraryComposer.compose(prompt)
+    }
+
+    /**
+     * Cities/Countries/Places/Culture/Shopping each only make sense for one kind of
+     * input (a city name, a country name, etc.). Whether the query IS a country is
+     * checked against a static country list ([isKnownCountryName]), not Google's
+     * Places `types` - Places Text Search is a business/POI index, not a geocoder,
+     * so the bare word "Lebanon" doesn't even surface the country, just a small town
+     * that happens to share the name; classifying by `types` alone would let exactly
+     * the input this feature exists to reject sail through as a "locality". Whether
+     * it's a *city* (only needed to decide whether Places mode should expand to
+     * "every place in that city") still comes from Places `types`, since real,
+     * prominent cities are reliably tagged "locality" there.
+     */
+    private suspend fun resolveQueryForMode(query: String, mode: PlaceSearchMode): QueryResolution {
+        val isCountry = isKnownCountryName(query)
+
+        return when (mode) {
+            PlaceSearchMode.CITIES -> if (isCountry) {
+                QueryResolution.Invalid("Cities only accepts city names, like Beirut, Paris, Frankfurt, or New York - not a country.")
+            } else {
+                QueryResolution.Valid(query)
+            }
+            PlaceSearchMode.COUNTRIES -> if (!isCountry) {
+                QueryResolution.Invalid("Countries only accepts country names, like Lebanon, France, or Japan.")
+            } else {
+                QueryResolution.Valid(query)
+            }
+            PlaceSearchMode.PLACES -> if (isCountry) {
+                QueryResolution.Invalid("Places doesn't accept country names - try a specific place, or a city to see all its places.")
+            } else if (classifyAsCity(query)) {
+                QueryResolution.Valid("points of interest in $query")
+            } else {
+                QueryResolution.Valid(query)
+            }
+            PlaceSearchMode.CULTURE -> if (isCountry || classifyAsCity(query)) {
+                QueryResolution.Invalid("Culture only accepts specific museums, galleries, or landmarks - not a city or country name.")
+            } else {
+                QueryResolution.Valid(query)
+            }
+            PlaceSearchMode.SHOPPING -> if (isCountry || classifyAsCity(query)) {
+                QueryResolution.Invalid("Shopping only accepts specific shopping spots - not a city or country name.")
+            } else {
+                QueryResolution.Valid(query)
+            }
+            else -> QueryResolution.Valid(query)
+        }
+    }
+
+    private suspend fun classifyAsCity(query: String): Boolean {
+        val result = placesDataSource.searchPlaces(query, placeType = null)
+        val types = (result as? AppResult.Success)?.data?.firstOrNull()?.types ?: return false
+        return types.contains("locality")
+    }
+
+    private sealed interface QueryResolution {
+        data class Valid(val query: String) : QueryResolution
+        data class Invalid(val message: String) : QueryResolution
+    }
 
     override suspend fun recordSearch(
         userId: String,
@@ -65,6 +201,10 @@ class PlacesRepositoryImpl @Inject constructor(
     override suspend fun clearSearchHistory(userId: String): Result<Unit> = runCatching {
         placesSupabaseDataSource.clearSearchHistory(userId)
     }
+
+    override suspend fun getTrendingSearches(limit: Int): Result<List<TrendingSearch>> = runCatching {
+        placesSupabaseDataSource.getTrendingSearches(limit).map { it.toDomain() }
+    }.onFailure { Log.w(TAG, "getTrendingSearches FAILED", it) }
 
     override val pendingFavoritePlaceIds: Flow<Set<String>> =
         pendingFavoriteQueue.pendingActions.map { actions -> actions.map { it.placeId }.toSet() }

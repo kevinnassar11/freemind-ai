@@ -132,6 +132,14 @@ dependencies {
     // Google Maps (Places search section)
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
+    // Device location, so "near me" uses where the user actually is rather than
+    // whatever Google infers from the request IP.
+    implementation(libs.play.services.location)
+
+    // Room (offline place-search cache)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // HTTP client (Places REST search)
     implementation(libs.okhttp)

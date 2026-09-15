@@ -9,3 +9,11 @@ project_id = "freemind-ai"
 # configured in the Supabase dashboard - see SETUP.md.
 [functions.stamp-role]
 verify_jwt = false
+
+# NOT DEPLOYED - see functions/notify-favorites/index.ts for why. Listed here
+# so the config is ready once it is deployed. This function checks its caller
+# against SUPABASE_SERVICE_ROLE_KEY itself (it's only ever meant to be invoked
+# by the scheduled pg_cron job, never by an end user), so the gateway's normal
+# end-user JWT check is off, same reasoning as the other two functions.
+[functions.notify-favorites]
+verify_jwt = false

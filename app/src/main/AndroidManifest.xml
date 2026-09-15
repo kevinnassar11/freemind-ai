@@ -5,6 +5,32 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Coarse is enough to bias a places search and show the blue dot; fine is
+         optional and only sharpens the distance readout. Both are runtime
+         permissions and the app works without either (falls back to Google's
+         IP-based bias), so neither is marked required. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+
+    <!-- Android 11+ hides other apps from resolveActivity()/queryIntentActivities()
+         unless declared here - without this, Directions silently fell through to the
+         geo: fallback (or did nothing) on every device regardless of whether Google
+         Maps was actually installed. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="google.navigation" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+    </queries>
+
     <application
         android:name=".FreeMindApplication"
         android:allowBackup="true"

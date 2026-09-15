@@ -32,10 +32,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freemind.ai.R
 import com.freemind.ai.domain.model.PlaceSearchHistoryEntry
+import com.freemind.ai.ui.components.ErrorBanner
 import com.freemind.ai.util.toRelativeTimeString
 
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
+fun HistoryScreen(
+    viewModel: HistoryViewModel = hiltViewModel(),
+    onOpenEntry: (PlaceSearchHistoryEntry) -> Unit = {},
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     // The nav graph keeps this screen's ViewModel alive across tab switches
@@ -56,13 +60,25 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
             uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+            // Checked before the empty state on purpose: a failed load also leaves
+            // `entries` empty, and falling through to "no past searches" told users
+            // their history was gone when the fetch had simply failed.
+            uiState.isError -> ErrorBanner(
+                message = stringResource(R.string.history_load_error),
+                onRetry = { viewModel.refresh() },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
             uiState.entries.isEmpty() -> HistoryEmptyState()
             else -> LazyColumn(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(uiState.entries, key = { it.id }) { entry ->
-                    SearchHistoryCard(entry = entry, onDelete = { viewModel.deleteEntry(entry.id) })
+                    SearchHistoryCard(
+                        entry = entry,
+                        onOpen = { onOpenEntry(entry) },
+                        onDelete = { viewModel.deleteEntry(entry.id) },
+                    )
                 }
             }
         }
@@ -70,11 +86,12 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun SearchHistoryCard(entry: PlaceSearchHistoryEntry, onDelete: () -> Unit) {
+private fun SearchHistoryCard(entry: PlaceSearchHistoryEntry, onOpen: () -> Unit, onDelete: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth(),
+        onClick = onOpen,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

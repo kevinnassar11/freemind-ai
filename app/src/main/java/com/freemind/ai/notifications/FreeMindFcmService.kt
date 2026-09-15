@@ -37,10 +37,17 @@ class FreeMindFcmService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         val title = message.notification?.title ?: getString(R.string.app_name)
         val body = message.notification?.body ?: message.data["body"] ?: return
-        showNotification(title, body)
+        showNotification(title, body, message.data)
     }
 
-    private fun showNotification(title: String, body: String) {
+    /**
+     * data carries the favorited place directly (place_id/title/lat/lng) rather
+     * than just an id, because looking a place back up by id would need a
+     * Places Details API call this app doesn't otherwise make - the
+     * notify-favorites Edge Function already has this data on hand from
+     * favorite_places, so it's cheaper to just pass it through.
+     */
+    private fun showNotification(title: String, body: String, data: Map<String, String>) {
         val hasPermission = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.POST_NOTIFICATIONS,
@@ -49,6 +56,10 @@ class FreeMindFcmService : FirebaseMessagingService() {
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            data["place_id"]?.let { putExtra(EXTRA_PLACE_ID, it) }
+            data["place_title"]?.let { putExtra(EXTRA_PLACE_TITLE, it) }
+            data["place_latitude"]?.toDoubleOrNull()?.let { putExtra(EXTRA_PLACE_LATITUDE, it) }
+            data["place_longitude"]?.toDoubleOrNull()?.let { putExtra(EXTRA_PLACE_LONGITUDE, it) }
         }
         val pendingIntent = PendingIntent.getActivity(
             this,

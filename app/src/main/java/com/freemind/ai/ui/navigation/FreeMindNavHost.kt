@@ -30,6 +30,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.freemind.ai.ui.auth.SignInScreen
 import com.freemind.ai.ui.favorites.FavoritesScreen
 import com.freemind.ai.ui.history.HistoryScreen
@@ -46,9 +47,12 @@ private const val MAX_CONTENT_WIDTH_DP = 840
 fun FreeMindNavHost(
     authGateViewModel: AuthGateViewModel = hiltViewModel(),
     navController: NavHostController = rememberNavController(),
+    /** Set when the app was opened via a push-notification deep link (see MainActivity). */
+    pendingMapsFocus: Destination.Maps? = null,
+    onMapsFocusConsumed: () -> Unit = {},
 ) {
     val authState by authGateViewModel.state.collectAsState()
-    val startDestination = if (authState is AuthGateState.SignedIn) Destination.Maps else Destination.SignIn
+    val startDestination = if (authState is AuthGateState.SignedIn) Destination.Maps() else Destination.SignIn
     val isExpandedWidth = LocalConfiguration.current.screenWidthDp >= EXPANDED_WIDTH_BREAKPOINT_DP
 
     LaunchedEffect(authState) {
@@ -56,7 +60,7 @@ fun FreeMindNavHost(
         when (authState) {
             is AuthGateState.SignedIn -> {
                 if (current?.hasRoute(Destination.SignIn::class) == true) {
-                    navController.navigate(Destination.Maps) {
+                    navController.navigate(Destination.Maps()) {
                         popUpTo(Destination.SignIn) { inclusive = true }
                     }
                 }
@@ -70,6 +74,21 @@ fun FreeMindNavHost(
                 }
             }
             AuthGateState.Loading -> Unit
+        }
+    }
+
+    // Handles a notification tap both on cold start (graph is created already
+    // pointed at plain Destination.Maps(), so this promotes it to the focused
+    // version) and warm start (MainActivity.onNewIntent updates this same
+    // parameter while the graph already exists).
+    LaunchedEffect(pendingMapsFocus, authState) {
+        val focus = pendingMapsFocus ?: return@LaunchedEffect
+        if (authState is AuthGateState.SignedIn) {
+            navController.navigate(focus) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+            }
+            onMapsFocusConsumed()
         }
     }
 
@@ -96,9 +115,53 @@ fun FreeMindNavHost(
                 modifier = Modifier.widthIn(max = MAX_CONTENT_WIDTH_DP.dp),
             ) {
                 composable<Destination.SignIn> { SignInScreen() }
-                composable<Destination.Maps> { MapsScreen() }
-                composable<Destination.History> { HistoryScreen() }
-                composable<Destination.Favorites> { FavoritesScreen() }
+                composable<Destination.Maps> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Destination.Maps>()
+                    MapsScreen(
+                        focusPlaceId = args.focusPlaceId,
+                        focusTitle = args.focusTitle,
+                        focusLatitude = args.focusLatitude,
+                        focusLongitude = args.focusLongitude,
+                        runQuery = args.runQuery,
+                        runMode = args.runMode,
+                    )
+                }
+                composable<Destination.History> {
+                    HistoryScreen(
+                        // Deliberately no restoreState here, unlike onTabClick below:
+                        // this Maps() carries specific arguments (the search to
+                        // re-run), and restoreState would instead reattach whatever
+                        // Maps state the tab last had saved, silently discarding
+                        // them - the same reason the push-notification deep link
+                        // effect above never sets it either.
+                        onOpenEntry = { entry ->
+                            navController.navigate(
+                                Destination.Maps(runQuery = entry.query, runMode = entry.mode.name),
+                            ) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
+                composable<Destination.Favorites> {
+                    FavoritesScreen(
+                        // Same reasoning as History's onOpenEntry above.
+                        onOpenFavorite = { favorite ->
+                            navController.navigate(
+                                Destination.Maps(
+                                    focusPlaceId = favorite.placeId,
+                                    focusTitle = favorite.title,
+                                    focusLatitude = favorite.latitude,
+                                    focusLongitude = favorite.longitude,
+                                ),
+                            ) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
                 composable<Destination.Settings> { SettingsScreen() }
             }
         }

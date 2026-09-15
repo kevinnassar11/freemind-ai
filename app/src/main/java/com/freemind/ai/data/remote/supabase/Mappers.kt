@@ -3,6 +3,7 @@ package com.freemind.ai.data.remote.supabase
 import com.freemind.ai.domain.model.FavoritePlace
 import com.freemind.ai.domain.model.PlaceSearchHistoryEntry
 import com.freemind.ai.domain.model.PlaceSearchMode
+import com.freemind.ai.domain.model.TrendingSearch
 import kotlin.time.Instant
 
 fun PlaceSearchHistoryDto.toDomain() = PlaceSearchHistoryEntry(
@@ -15,6 +16,8 @@ fun PlaceSearchHistoryDto.toDomain() = PlaceSearchHistoryEntry(
     longitude = longitude,
     searchedAt = Instant.parse(searchedAt),
 )
+
+fun TrendingSearchDto.toDomain() = TrendingSearch(query = query, searchCount = searchCount)
 
 fun FavoritePlaceDto.toDomain() = FavoritePlace(
     id = id,

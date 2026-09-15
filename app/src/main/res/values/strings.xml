@@ -65,6 +65,7 @@
 
     <!-- Places / maps -->
     <string name="maps_search_placeholder">Search for a place</string>
+    <string name="itinerary_title">Your trip plan</string>
     <string name="mode_prompt">Prompt</string>
     <string name="mode_cities">Cities</string>
     <string name="mode_countries">Countries</string>
@@ -81,7 +82,20 @@
     <string name="maps_hint_shopping">Start typing a shopping spot…</string>
     <string name="maps_clear">Clear search</string>
     <string name="maps_no_results">No places found for “%1$s”.</string>
-    <string name="maps_results_count">%1$d places</string>
+    <plurals name="maps_results_count">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
+    <string name="history_load_error">Couldn\'t load your searches. Check your connection and try again.</string>
+    <string name="favorites_load_error">Couldn\'t load your favorites. Check your connection and try again.</string>
+    <string name="maps_search_field_label">Search places</string>
+    <string name="maps_directions">Directions</string>
+    <string name="maps_open_in_maps">Open in Google Maps</string>
+    <string name="maps_my_location">Show my location</string>
+    <string name="maps_distance_km">%1$s km away</string>
+    <string name="maps_distance_m">%1$d m away</string>
+    <string name="maps_location_rationale">Allow location so “near me” searches use where you actually are.</string>
     <string name="error_maps_not_configured">Maps isn\'t configured yet. Add MAPS_API_KEY to local.properties — see SETUP.md.</string>
     <string name="error_maps_denied">Maps rejected the request. Check the API key restrictions and that Places API is enabled.</string>
+    <string name="showing_cached_results">Showing saved results — you\'re offline.</string>
 </resources>

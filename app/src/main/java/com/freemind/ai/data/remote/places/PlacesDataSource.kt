@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.content.pm.Signature
 import android.os.Build
 import com.freemind.ai.BuildConfig
+import com.freemind.ai.domain.model.DeviceLocation
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.util.AppError
 import com.freemind.ai.util.AppResult
@@ -48,15 +49,24 @@ class PlacesDataSource @Inject constructor(
     // REQUEST_DENIED regardless of how correctly the key is restricted.
     private val androidCertSha1: String by lazy { signingCertSha1(context) }
 
+    private companion object {
+        /** Wide enough to cover a city, narrow enough that "near me" means it. */
+        const val BIAS_RADIUS_METRES = 30_000
+    }
+
     suspend fun searchPlaces(
         query: String,
         placeType: String? = null,
+        /** Device position, when known, so results are ranked around the user rather
+         *  than around whatever location Google infers from the request IP. */
+        bias: DeviceLocation? = null,
     ): AppResult<List<PlaceResult>> = withContext(Dispatchers.IO) {
         if (BuildConfig.MAPS_API_KEY.isBlank()) return@withContext AppResult.Failure(AppError.NotConfigured)
 
         val url = "https://maps.googleapis.com/maps/api/place/textsearch/json" +
             "?query=${URLEncoder.encode(query, "UTF-8")}" +
             (placeType?.let { "&type=$it" } ?: "") +
+            (bias?.let { "&location=${it.latitude},${it.longitude}&radius=$BIAS_RADIUS_METRES" } ?: "") +
             "&key=${BuildConfig.MAPS_API_KEY}"
 
         val request = Request.Builder()
@@ -99,11 +109,12 @@ class PlacesDataSource @Inject constructor(
                 PlaceResult(
                     id = place.placeId,
                     title = place.name,
-                    description = place.formattedAddress
+                    description = place.readableAddress()
                         ?: place.types.firstOrNull()?.replace('_', ' ')
                         ?: "Unknown place",
                     latitude = place.geometry?.location?.lat,
                     longitude = place.geometry?.location?.lng,
+                    types = place.types,
                 )
             },
         )
@@ -146,9 +157,36 @@ private data class PlaceDto(
     @SerialName("place_id") val placeId: String,
     val name: String,
     @SerialName("formatted_address") val formattedAddress: String? = null,
+    /** Set on results that have no street address; usually just the neighbourhood. */
+    val vicinity: String? = null,
     val types: List<String> = emptyList(),
     val geometry: GeometryDto? = null,
 )
+
+/**
+ * An Open Location Code ("plus code") as it leads a `formatted_address` component -
+ * e.g. the "H99M+X77" in "H99M+X77, Sidon, Lebanon", or, for a place with no mapped
+ * street at all, glued straight onto a description with no comma, as in
+ * "VFRM+84M Near Swiss Butter Verdun, Bayrut, Lebanon". Google substitutes one
+ * whenever a place has no street address. It's a valid location and a useless label,
+ * so it gets stripped in favour of whatever readable text is left in that component.
+ */
+private val PLUS_CODE_PREFIX = Regex("""^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}\s*""")
+
+/**
+ * The most human-readable address available: the formatted address with any leading
+ * plus code stripped from each component, falling back to `vicinity` when stripping
+ * leaves nothing behind.
+ */
+private fun PlaceDto.readableAddress(): String? {
+    val withoutPlusCode = formattedAddress
+        ?.split(',')
+        ?.map { PLUS_CODE_PREFIX.replace(it.trim(), "").trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.joinToString(", ")
+        ?.takeIf { it.isNotBlank() }
+    return withoutPlusCode ?: vicinity?.takeIf { it.isNotBlank() }
+}
 
 @Serializable
 private data class GeometryDto(val location: LocationDto? = null)

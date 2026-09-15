@@ -31,10 +31,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freemind.ai.R
 import com.freemind.ai.domain.model.FavoritePlace
+import com.freemind.ai.ui.components.ErrorBanner
 import com.freemind.ai.util.toRelativeTimeString
 
 @Composable
-fun FavoritesScreen(viewModel: FavoritesViewModel = hiltViewModel()) {
+fun FavoritesScreen(
+    viewModel: FavoritesViewModel = hiltViewModel(),
+    onOpenFavorite: (FavoritePlace) -> Unit = {},
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     // Same reasoning as HistoryScreen: the ViewModel survives tab switches,
@@ -53,13 +57,25 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = hiltViewModel()) {
             uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+            // Before the empty state: a failed load leaves `favorites` empty too, and
+            // showing "places you save will show up here" to someone who has saved
+            // plenty reads as though their data is gone.
+            uiState.isError -> ErrorBanner(
+                message = stringResource(R.string.favorites_load_error),
+                onRetry = { viewModel.refresh() },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
             uiState.favorites.isEmpty() -> FavoritesEmptyState()
             else -> LazyColumn(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(uiState.favorites, key = { it.id }) { favorite ->
-                    FavoriteCard(favorite = favorite, onRemove = { viewModel.removeFavorite(favorite) })
+                    FavoriteCard(
+                        favorite = favorite,
+                        onOpen = { onOpenFavorite(favorite) },
+                        onRemove = { viewModel.removeFavorite(favorite) },
+                    )
                 }
             }
         }
@@ -67,11 +83,12 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun FavoriteCard(favorite: FavoritePlace, onRemove: () -> Unit) {
+private fun FavoriteCard(favorite: FavoritePlace, onOpen: () -> Unit, onRemove: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth(),
+        onClick = onOpen,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

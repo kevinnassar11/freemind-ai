@@ -2,6 +2,16 @@ package com.freemind.ai.ui.auth
 
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,9 +36,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -53,6 +67,33 @@ fun SignInScreen(viewModel: SignInViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // A gentle, continuous breathing scale on the logo mark - runs the whole time
+    // the screen is up, independent of the one-shot entrance animation below.
+    val logoPulse = remember { Animatable(1f) }
+    LaunchedEffect(Unit) {
+        logoPulse.animateTo(
+            targetValue = 1.06f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        )
+    }
+
+    // Logo, text, and button fade/slide in one after another rather than all at
+    // once, so the first thing someone sees settling into place is the mark, not
+    // a wall of content appearing simultaneously.
+    var logoVisible by remember { mutableStateOf(false) }
+    var textVisible by remember { mutableStateOf(false) }
+    var buttonVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        logoVisible = true
+        kotlinx.coroutines.delay(120)
+        textVisible = true
+        kotlinx.coroutines.delay(120)
+        buttonVisible = true
+    }
 
     fun launchGoogleSignIn() {
         scope.launch {
@@ -114,34 +155,48 @@ fun SignInScreen(viewModel: SignInViewModel = hiltViewModel()) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Surface(
-                modifier = Modifier.size(88.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
+            AnimatedVisibility(
+                visible = logoVisible,
+                enter = fadeIn(tween(420)) + slideInVertically(tween(420)) { it / 2 },
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Filled.AutoAwesome,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(40.dp),
-                    )
+                Surface(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .graphicsLayer { scaleX = logoPulse.value; scaleY = logoPulse.value },
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(40.dp),
+                        )
+                    }
                 }
             }
 
-            Text(
-                text = stringResource(R.string.sign_in_title),
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 24.dp),
-            )
-            Text(
-                text = stringResource(R.string.sign_in_subtitle),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp),
-            )
+            AnimatedVisibility(
+                visible = textVisible,
+                enter = fadeIn(tween(420)) + slideInVertically(tween(420)) { it / 2 },
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.sign_in_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 24.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.sign_in_subtitle),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
 
             AnimatedVisibility(visible = uiState is SignInUiState.Error) {
                 ErrorBanner(
@@ -151,35 +206,46 @@ fun SignInScreen(viewModel: SignInViewModel = hiltViewModel()) {
                 )
             }
 
-            Button(
-                onClick = {
-                    viewModel.onSignInStarted()
-                    launchGoogleSignIn()
-                },
-                enabled = uiState !is SignInUiState.Loading,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-                modifier = Modifier
-                    .padding(top = 32.dp)
-                    .fillMaxWidth()
-                    .height(52.dp),
+            AnimatedVisibility(
+                visible = buttonVisible,
+                enter = fadeIn(tween(420)) + slideInVertically(tween(420)) { it / 2 },
             ) {
-                if (uiState is SignInUiState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.Login, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Text(
-                        text = stringResource(R.string.sign_in_with_google),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(start = 12.dp),
-                    )
+                val pressScale by animateFloatAsState(
+                    targetValue = if (uiState is SignInUiState.Loading) 0.97f else 1f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                    label = "signInButtonScale",
+                )
+                Button(
+                    onClick = {
+                        viewModel.onSignInStarted()
+                        launchGoogleSignIn()
+                    },
+                    enabled = uiState !is SignInUiState.Loading,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    modifier = Modifier
+                        .padding(top = 32.dp)
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .graphicsLayer { scaleX = pressScale; scaleY = pressScale },
+                ) {
+                    if (uiState is SignInUiState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(imageVector = Icons.AutoMirrored.Filled.Login, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = stringResource(R.string.sign_in_with_google),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
                 }
             }
         }

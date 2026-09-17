@@ -1,5 +1,15 @@
 package com.freemind.ai.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -69,52 +80,68 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+    var contentVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { contentVisible = true }
+
+    AnimatedVisibility(
+        visible = contentVisible,
+        enter = fadeIn(tween(360)) + slideInHorizontally(tween(360)) { it / 6 },
     ) {
-        Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        ) {
+            Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
 
-        SectionHeader(stringResource(R.string.settings_appearance))
-        ThemeModeSelector(selected = uiState.themeMode, onSelect = viewModel::setThemeMode)
+            SectionHeader(stringResource(R.string.settings_appearance))
+            ThemeModeSelector(selected = uiState.themeMode, onSelect = viewModel::setThemeMode)
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-        SectionHeader(stringResource(R.string.settings_data))
-        HistoryToggleRow(checked = uiState.historyEnabled, onCheckedChange = viewModel::setHistoryEnabled)
-        SettingsRow(
-            label = stringResource(R.string.clear_search_history),
-            trailing = { if (uiState.isClearingHistory) CircularProgressIndicator(modifier = Modifier.padding(4.dp)) },
-            onClick = { showClearHistoryDialog = true },
-        )
+            SectionHeader(stringResource(R.string.settings_data))
+            HistoryToggleRow(checked = uiState.historyEnabled, onCheckedChange = viewModel::setHistoryEnabled)
+            SettingsRow(
+                label = stringResource(R.string.clear_search_history),
+                trailing = {
+                    AnimatedVisibility(visible = uiState.isClearingHistory, enter = fadeIn(), exit = fadeOut()) {
+                        CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                    }
+                },
+                onClick = { showClearHistoryDialog = true },
+            )
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-        SectionHeader(stringResource(R.string.settings_export))
-        SettingsRow(label = stringResource(R.string.export_favorites), onClick = viewModel::exportFavorites)
-        SettingsRow(label = stringResource(R.string.export_history), onClick = viewModel::exportSearchHistory)
+            SectionHeader(stringResource(R.string.settings_export))
+            SettingsRow(label = stringResource(R.string.export_favorites), onClick = viewModel::exportFavorites)
+            SettingsRow(label = stringResource(R.string.export_history), onClick = viewModel::exportSearchHistory)
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
-        SectionHeader(stringResource(R.string.settings_account))
-        val identity = uiState.userDisplayName ?: uiState.userEmail
-        if (identity != null) {
-            Text(
-                text = stringResource(R.string.signed_in_as, identity),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp),
+            SectionHeader(stringResource(R.string.settings_account))
+            val identity = uiState.userDisplayName ?: uiState.userEmail
+            if (identity != null) {
+                Text(
+                    text = stringResource(R.string.signed_in_as, identity),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+            }
+            SettingsRow(label = stringResource(R.string.sign_out), onClick = { showSignOutDialog = true })
+            SettingsRow(
+                label = stringResource(R.string.delete_account),
+                labelColor = MaterialTheme.colorScheme.error,
+                trailing = {
+                    AnimatedVisibility(visible = uiState.isDeletingAccount, enter = fadeIn(), exit = fadeOut()) {
+                        CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                    }
+                },
+                onClick = { showDeleteAccountDialog = true },
             )
         }
-        SettingsRow(label = stringResource(R.string.sign_out), onClick = { showSignOutDialog = true })
-        SettingsRow(
-            label = stringResource(R.string.delete_account),
-            labelColor = MaterialTheme.colorScheme.error,
-            trailing = { if (uiState.isDeletingAccount) CircularProgressIndicator(modifier = Modifier.padding(4.dp)) },
-            onClick = { showDeleteAccountDialog = true },
-        )
     }
 
     if (showClearHistoryDialog) {
@@ -163,14 +190,29 @@ private fun ThemeModeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit
     )
     Column(Modifier.selectableGroup()) {
         options.forEach { (mode, label) ->
+            val isSelected = selected == mode
+            // The chosen option nudges in and picks up a faint tint, rather than
+            // just the radio dot silently filling - makes the pick itself the thing
+            // that visibly moves, not a detail you'd only notice by looking for it.
+            val indent by animateFloatAsState(
+                targetValue = if (isSelected) 6f else 0f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                label = "themeRowIndent",
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .selectable(selected = selected == mode, onClick = { onSelect(mode) }),
+                    .selectable(selected = isSelected, onClick = { onSelect(mode) })
+                    .graphicsLayer { translationX = indent },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                RadioButton(selected = selected == mode, onClick = { onSelect(mode) })
-                Text(text = label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 4.dp))
+                RadioButton(selected = isSelected, onClick = { onSelect(mode) })
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
             }
         }
     }
@@ -203,13 +245,21 @@ private fun SettingsRow(
     labelColor: Color = MaterialTheme.colorScheme.onSurface,
     trailing: @Composable () -> Unit = {},
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "settingsRowPress",
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(vertical = 10.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TextButton(onClick = onClick, modifier = Modifier.weight(1f)) {
+        TextButton(onClick = onClick, interactionSource = interactionSource, modifier = Modifier.weight(1f)) {
             Text(text = label, color = labelColor, modifier = Modifier.fillMaxWidth())
         }
         trailing()

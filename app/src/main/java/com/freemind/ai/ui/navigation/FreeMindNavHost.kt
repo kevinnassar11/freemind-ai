@@ -1,5 +1,12 @@
 package com.freemind.ai.ui.navigation
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -42,6 +50,12 @@ private const val EXPANDED_WIDTH_BREAKPOINT_DP = 600
 
 /** Keeps content from stretching edge-to-edge on large tablets. */
 private const val MAX_CONTENT_WIDTH_DP = 840
+
+/** Screen-to-screen transition: a soft cross-fade with a slight scale-up on the
+ *  incoming screen. Used for every destination (sign-in, all four tabs, and the
+ *  focused-place/re-run-search deep links into Maps) rather than a directional
+ *  slide, since bottom-nav tabs have no real left/right order to signal. */
+private const val NAV_TRANSITION_MS = 260
 
 @Composable
 fun FreeMindNavHost(
@@ -113,6 +127,10 @@ fun FreeMindNavHost(
                 navController = navController,
                 startDestination = startDestination,
                 modifier = Modifier.widthIn(max = MAX_CONTENT_WIDTH_DP.dp),
+                enterTransition = { fadeIn(tween(NAV_TRANSITION_MS)) + scaleIn(initialScale = 0.96f, animationSpec = tween(NAV_TRANSITION_MS)) },
+                exitTransition = { fadeOut(tween(NAV_TRANSITION_MS / 2)) },
+                popEnterTransition = { fadeIn(tween(NAV_TRANSITION_MS)) + scaleIn(initialScale = 0.96f, animationSpec = tween(NAV_TRANSITION_MS)) },
+                popExitTransition = { fadeOut(tween(NAV_TRANSITION_MS / 2)) },
             ) {
                 composable<Destination.SignIn> { SignInScreen() }
                 composable<Destination.Maps> { backStackEntry ->
@@ -175,12 +193,7 @@ fun FreeMindNavHost(
                     NavigationRailItem(
                         selected = selected,
                         onClick = { onTabClick(tab.destination) },
-                        icon = {
-                            Icon(
-                                imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                contentDescription = stringResource(tab.labelRes),
-                            )
-                        },
+                        icon = { BouncyTabIcon(tab = tab, selected = selected, contentDescription = stringResource(tab.labelRes)) },
                         label = { Text(stringResource(tab.labelRes)) },
                     )
                 }
@@ -197,12 +210,7 @@ fun FreeMindNavHost(
                             NavigationBarItem(
                                 selected = selected,
                                 onClick = { onTabClick(tab.destination) },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                        contentDescription = stringResource(tab.labelRes),
-                                    )
-                                },
+                                icon = { BouncyTabIcon(tab = tab, selected = selected, contentDescription = stringResource(tab.labelRes)) },
                                 label = { Text(stringResource(tab.labelRes)) },
                             )
                         }
@@ -213,4 +221,20 @@ fun FreeMindNavHost(
             content(Modifier.padding(innerPadding))
         }
     }
+}
+
+/** The tab's icon swaps to its filled variant and pops slightly larger when
+ *  selected, instead of just snapping between the outlined/filled drawables. */
+@Composable
+private fun BouncyTabIcon(tab: TopLevelTab, selected: Boolean, contentDescription: String) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.18f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "tabIconScale",
+    )
+    Icon(
+        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+        contentDescription = contentDescription,
+        modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale },
+    )
 }

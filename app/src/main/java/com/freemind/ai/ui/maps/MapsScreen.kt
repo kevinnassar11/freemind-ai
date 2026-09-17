@@ -7,8 +7,22 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.net.toUri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,12 +68,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -205,12 +221,20 @@ fun MapsScreen(
                 val lat = place.latitude
                 val lng = place.longitude
                 if (lat != null && lng != null) {
-                    Marker(
-                        state = MarkerState(position = LatLng(lat, lng)),
-                        title = place.title,
-                        snippet = place.description,
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED),
-                    )
+                    // Keyed on the place id so a genuinely new marker (not just the
+                    // same slot re-drawn with different data) gets its own fresh
+                    // fade-in rather than replaying on every recomposition.
+                    key(place.id) {
+                        val markerAlpha = remember { Animatable(0f) }
+                        LaunchedEffect(Unit) { markerAlpha.animateTo(1f, tween(450)) }
+                        Marker(
+                            state = MarkerState(position = LatLng(lat, lng)),
+                            title = place.title,
+                            snippet = place.description,
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED),
+                            alpha = markerAlpha.value,
+                        )
+                    }
                 }
             }
         }
@@ -219,7 +243,11 @@ fun MapsScreen(
             // Trending only makes sense before the user has committed to their own
             // query - once they've typed or searched something, their own intent
             // takes over and the chip row would just be clutter above the results.
-            if (uiState.query.isBlank() && !uiState.hasSearched && uiState.trendingSearches.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = uiState.query.isBlank() && !uiState.hasSearched && uiState.trendingSearches.isNotEmpty(),
+                enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                exit = fadeOut(tween(200)) + shrinkVertically(tween(200)),
+            ) {
                 TrendingSearchChips(
                     trending = uiState.trendingSearches,
                     onSelect = viewModel::onTrendingSearchSelected,
@@ -254,7 +282,11 @@ fun MapsScreen(
                 ),
                 leadingIcon = { Icon(imageVector = Icons.Filled.Search, contentDescription = null) },
                 trailingIcon = {
-                    if (uiState.query.isNotEmpty()) {
+                    AnimatedVisibility(
+                        visible = uiState.query.isNotEmpty(),
+                        enter = fadeIn(tween(150)),
+                        exit = fadeOut(tween(150)),
+                    ) {
                         IconButton(onClick = viewModel::clear) {
                             Icon(
                                 imageVector = Icons.Filled.Clear,
@@ -270,15 +302,26 @@ fun MapsScreen(
                 }),
             )
 
-            uiState.error?.let { error ->
-                ErrorBanner(
-                    message = error.toMapsMessage(),
-                    onRetry = { viewModel.dismissError(); viewModel.search() },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
+            AnimatedVisibility(
+                visible = uiState.error != null,
+                enter = fadeIn(tween(280)) + expandVertically(tween(280)),
+                exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
+            ) {
+                val error = uiState.error
+                if (error != null) {
+                    ErrorBanner(
+                        message = error.toMapsMessage(),
+                        onRetry = { viewModel.dismissError(); viewModel.search() },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
             }
 
-            if (uiState.isShowingCachedResults) {
+            AnimatedVisibility(
+                visible = uiState.isShowingCachedResults,
+                enter = fadeIn(tween(280)) + expandVertically(tween(280)),
+                exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
+            ) {
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(12.dp),
@@ -295,7 +338,11 @@ fun MapsScreen(
                 }
             }
 
-            if (uiState.isSearching) {
+            AnimatedVisibility(
+                visible = uiState.isSearching,
+                enter = fadeIn(tween(200)),
+                exit = fadeOut(tween(150)),
+            ) {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(modifier = Modifier.padding(16.dp))
                 }
@@ -303,15 +350,31 @@ fun MapsScreen(
         }
 
         val itinerary = uiState.itinerary
-        if (itinerary != null) {
-            ItineraryCard(
-                text = itinerary,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            )
-        } else if (uiState.results.isNotEmpty()) {
+        val bottomSheetEnter = fadeIn(tween(320)) + slideInVertically(tween(320)) { it / 4 }
+        val bottomSheetExit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { it / 4 }
+
+        AnimatedVisibility(
+            visible = itinerary != null,
+            enter = bottomSheetEnter,
+            exit = bottomSheetExit,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            if (itinerary != null) {
+                ItineraryCard(
+                    text = itinerary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = itinerary == null && uiState.results.isNotEmpty(),
+            enter = bottomSheetEnter,
+            exit = bottomSheetExit,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
             ResultsSheet(
                 results = uiState.results,
                 selectedId = uiState.selected?.id,
@@ -321,12 +384,17 @@ fun MapsScreen(
                 onSelect = viewModel::selectPlace,
                 onToggleFavorite = viewModel::toggleFavorite,
                 onDirections = { context.startDirections(it) },
-                modifier = Modifier.align(Alignment.BottomCenter),
             )
-        } else if (uiState.hasSearched && !uiState.isSearching && uiState.error == null) {
+        }
+
+        AnimatedVisibility(
+            visible = itinerary == null && uiState.results.isEmpty() && uiState.hasSearched && !uiState.isSearching && uiState.error == null,
+            enter = bottomSheetEnter,
+            exit = bottomSheetExit,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
             Surface(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
@@ -363,11 +431,17 @@ private fun SearchModeChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PlaceSearchMode.entries.forEach { mode ->
+            val isSelected = mode == selected
+            val chipScale by animateFloatAsState(
+                targetValue = if (isSelected) 1.06f else 1f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+                label = "modeChipScale",
+            )
             FilterChip(
-                selected = mode == selected,
+                selected = isSelected,
                 onClick = { onSelect(mode) },
                 label = { Text(stringResource(mode.labelRes)) },
-                leadingIcon = if (mode == selected) {
+                leadingIcon = if (isSelected) {
                     {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -382,6 +456,7 @@ private fun SearchModeChips(
                     containerColor = MaterialTheme.colorScheme.surface,
                     selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
+                modifier = Modifier.graphicsLayer { scaleX = chipScale; scaleY = chipScale },
             )
         }
     }
@@ -479,6 +554,25 @@ private fun ResultsSheet(
                     val isFavorite = place.id in favoritePlaceIds
                     val isPending = place.id in pendingFavoritePlaceIds
                     val distance = deviceLocation?.distanceMetresTo(place.latitude, place.longitude)
+
+                    // A quick overshoot-and-settle pop whenever this row's favourite
+                    // state turns on, the familiar "heart burst" rather than the
+                    // icon just silently swapping to filled.
+                    val heartScale = remember(place.id) { Animatable(1f) }
+                    LaunchedEffect(isFavorite) {
+                        if (isFavorite) {
+                            heartScale.animateTo(1.5f, tween(120))
+                            heartScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+                        }
+                    }
+                    val directionsInteractionSource = remember { MutableInteractionSource() }
+                    val isDirectionsPressed by directionsInteractionSource.collectIsPressedAsState()
+                    val directionsScale by animateFloatAsState(
+                        targetValue = if (isDirectionsPressed) 1.2f else 1f,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                        label = "directionsScale",
+                    )
+
                     ListItem(
                         headlineContent = { Text(place.title) },
                         supportingContent = {
@@ -498,11 +592,12 @@ private fun ResultsSheet(
                                 // Directions used to be reachable only by tapping the
                                 // pin on the map, which no one finds. The list is where
                                 // people actually read the results, so it belongs here.
-                                IconButton(onClick = { onDirections(place) }) {
+                                IconButton(onClick = { onDirections(place) }, interactionSource = directionsInteractionSource) {
                                     Icon(
                                         imageVector = Icons.Filled.Directions,
                                         contentDescription = stringResource(R.string.maps_directions),
                                         tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.graphicsLayer { scaleX = directionsScale; scaleY = directionsScale },
                                     )
                                 }
                                 IconButton(onClick = { onToggleFavorite(place) }) {
@@ -523,6 +618,7 @@ private fun ResultsSheet(
                                             isFavorite -> MaterialTheme.colorScheme.primary
                                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                                         },
+                                        modifier = Modifier.graphicsLayer { scaleX = heartScale.value; scaleY = heartScale.value },
                                     )
                                 }
                             }
@@ -532,7 +628,13 @@ private fun ResultsSheet(
                         } else {
                             ListItemDefaults.colors()
                         },
-                        modifier = Modifier.clickable { onSelect(place) },
+                        modifier = Modifier
+                            .animateItem(
+                                fadeInSpec = tween(280),
+                                fadeOutSpec = tween(180),
+                                placementSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+                            )
+                            .clickable { onSelect(place) },
                     )
                     HorizontalDivider()
                 }

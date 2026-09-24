@@ -18,9 +18,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Calls the `generate-itinerary` Edge Function (see supabase/functions/generate-itinerary -
- * NOT deployed yet, see that file's header comment) to turn a free-form trip-planning
- * prompt into a Claude-generated paragraph itinerary.
+ * Calls the `generate-itinerary` Edge Function (see supabase/functions/generate-itinerary)
+ * to turn a free-form trip-planning prompt into a Claude-generated paragraph itinerary.
+ *
+ * Deployed, but inert until the project has an `ANTHROPIC_API_KEY` secret set - see that
+ * file's header comment. Until then it 503s and PlacesRepositoryImpl falls back to the
+ * on-device ItineraryComposer, same as before it was deployed.
  *
  * Same shape as RoleStampClient: a thin call to a Supabase Edge Function, authenticated
  * with the caller's own Firebase ID token.

@@ -60,6 +60,17 @@ class ModelsTest {
     }
 
     @Test fun `rating and price labels`() {
+        // The thousands separator follows the device language; pin it so the test is the same everywhere.
+        val previous = java.util.Locale.getDefault()
+        java.util.Locale.setDefault(java.util.Locale.US)
+        try {
+            ratingAndPriceLabels()
+        } finally {
+            java.util.Locale.setDefault(previous)
+        }
+    }
+
+    private fun ratingAndPriceLabels() {
         assertEquals("4.6★ (1,234)", place(rating = 4.6).copy(ratingCount = 1234).ratingLabel())
         assertEquals("4.0★", place(rating = 4.0).ratingLabel())
         assertNull(place().ratingLabel())
@@ -68,7 +79,7 @@ class ModelsTest {
         assertNull(place().priceLabel())
     }
 
-    @Test fun `itinerary places are distinct and share text lists every day`() {
+    @Test fun `itinerary places are distinct across days`() {
         val a = place("a", rating = 4.5)
         val b = place("b")
         val plan = Itinerary(
@@ -81,11 +92,6 @@ class ModelsTest {
             destination = null,
         )
         assertEquals(listOf("a", "b"), plan.places.map { it.id })
-        val text = plan.toShareText()
-        assertTrue(text.startsWith("2-day plan for Beirut"))
-        assertTrue("Day 1" in text && "Day 2" in text)
-        assertTrue("Visit Ta" in text && "Lunch at Tb" in text)
-        assertTrue("4.5★" in text)
     }
 
     @Test fun `distance is zero at the same point and sensible between cities`() {

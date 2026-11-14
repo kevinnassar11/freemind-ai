@@ -141,6 +141,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // Trip reminders: notifications scheduled for the days of a saved plan.
+    implementation(libs.androidx.work.runtime)
+
     // HTTP client (Places REST search)
     implementation(libs.okhttp)
 

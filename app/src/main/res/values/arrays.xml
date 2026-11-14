@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Lead-in phrases for a plan's stops. The ORDER of each array must match the English
+      list in ItineraryPlanner.kt (STOP_VERBS): a stored phrase is looked up by position.
+    -->
+    <string-array name="verbs_sight">
+        <item>Visit</item>
+        <item>Explore</item>
+        <item>See</item>
+        <item>Take in</item>
+        <item>Stroll around</item>
+    </string-array>
+    <string-array name="verbs_culture">
+        <item>Browse</item>
+        <item>Step inside</item>
+        <item>Discover</item>
+        <item>Tour</item>
+    </string-array>
+    <string-array name="verbs_nature">
+        <item>Wander through</item>
+        <item>Unwind at</item>
+        <item>Get outdoors at</item>
+        <item>Walk around</item>
+    </string-array>
+    <string-array name="verbs_eat">
+        <item>Lunch at</item>
+        <item>Eat at</item>
+        <item>Dine at</item>
+        <item>Refuel at</item>
+        <item>Taste the local food at</item>
+    </string-array>
+    <string-array name="verbs_swim">
+        <item>Swim at</item>
+        <item>Cool off at</item>
+        <item>Relax at</item>
+        <item>Spend the afternoon at</item>
+    </string-array>
+    <string-array name="verbs_shopping">
+        <item>Shop at</item>
+        <item>Browse</item>
+        <item>Pick up souvenirs at</item>
+        <item>Wander through</item>
+    </string-array>
+    <string-array name="verbs_nightlife">
+        <item>Evening drinks at</item>
+        <item>End the night at</item>
+        <item>Head out to</item>
+        <item>Nightcap at</item>
+    </string-array>
+</resources>

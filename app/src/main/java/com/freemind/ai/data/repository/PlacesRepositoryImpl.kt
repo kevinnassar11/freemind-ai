@@ -3,18 +3,26 @@ package com.freemind.ai.data.repository
 import android.graphics.Bitmap
 import android.util.Log
 import android.util.LruCache
+import com.freemind.ai.data.local.CachedPlaceDetailsEntity
 import com.freemind.ai.data.local.CachedPlaceSearchEntity
 import com.freemind.ai.data.local.PendingFavoriteAction
 import com.freemind.ai.data.local.PendingFavoriteQueue
+import com.freemind.ai.data.local.PendingPlanDeleteDao
+import com.freemind.ai.data.local.PendingPlanDeleteEntity
+import com.freemind.ai.data.local.PhotoDiskCache
+import com.freemind.ai.data.local.PlaceDetailsCacheDao
 import com.freemind.ai.data.local.PlaceSearchCacheDao
 import com.freemind.ai.data.local.SavedItineraryDao
 import com.freemind.ai.data.local.SavedItineraryEntity
 import com.freemind.ai.data.remote.places.PlacesDataSource
+import com.freemind.ai.data.remote.supabase.NewFavoriteListDto
 import com.freemind.ai.data.remote.supabase.NewFavoritePlaceDto
 import com.freemind.ai.data.remote.supabase.NewPlaceSearchHistoryDto
 import com.freemind.ai.data.remote.supabase.PlacesSupabaseDataSource
+import com.freemind.ai.data.remote.supabase.SavedPlanDto
 import com.freemind.ai.data.remote.supabase.toDomain
 import com.freemind.ai.domain.model.DeviceLocation
+import com.freemind.ai.domain.model.FavoriteList
 import com.freemind.ai.domain.model.FavoritePlace
 import com.freemind.ai.domain.model.Itinerary
 import com.freemind.ai.domain.model.PlaceDetails
@@ -22,14 +30,26 @@ import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.PlaceSearchHistoryEntry
 import com.freemind.ai.domain.model.PlaceSearchMode
 import com.freemind.ai.domain.model.TrendingSearch
+import com.freemind.ai.domain.model.distanceMetresTo
+import com.freemind.ai.notifications.TripReminderScheduler
 import com.freemind.ai.util.AppError
 import com.freemind.ai.util.AppResult
 import com.freemind.ai.util.isKnownCountryName
 import io.github.jan.supabase.exceptions.HttpRequestException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.IOException
+import java.time.Instant
+import java.time.OffsetDateTime
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,6 +57,10 @@ import javax.inject.Singleton
 private const val PHOTO_CACHE_ENTRIES = 24
 private const val TAG = "FreeMindPlaces"
 private const val CACHE_TTL_MS = 24L * 60 * 60 * 1000
+private const val PREFETCH_CONCURRENCY = 4
+
+/** "Open now" lists are for what is a short trip away - anything further is not "near me". */
+private const val NEARBY_RADIUS_METRES = 10_000.0
 
 @Singleton
 class PlacesRepositoryImpl @Inject constructor(
@@ -45,6 +69,10 @@ class PlacesRepositoryImpl @Inject constructor(
     private val pendingFavoriteQueue: PendingFavoriteQueue,
     private val placeSearchCacheDao: PlaceSearchCacheDao,
     private val savedItineraryDao: SavedItineraryDao,
+    private val pendingPlanDeleteDao: PendingPlanDeleteDao,
+    private val placeDetailsCacheDao: PlaceDetailsCacheDao,
+    private val photoDiskCache: PhotoDiskCache,
+    private val tripReminderScheduler: TripReminderScheduler,
     private val itineraryComposer: ItineraryComposer,
 ) : PlacesRepository {
 
@@ -97,23 +125,74 @@ class PlacesRepositoryImpl @Inject constructor(
      * walking down the street doesn't miss the cache on every search.
      */
     private fun cacheKey(query: String, mode: PlaceSearchMode, bias: DeviceLocation?): String {
-        val area = bias?.let { "|%.1f,%.1f".format(it.latitude, it.longitude) } ?: ""
-        return "${mode.name}|${query.trim().lowercase()}$area"
+        val area = bias?.let { "|%.1f,%.1f".format(Locale.US, it.latitude, it.longitude) } ?: ""
+        // Names come back in the app's language, so a cached English list must not be served as Arabic.
+        return "${mode.name}|${Locale.getDefault().language}|${query.trim().lowercase()}$area"
     }
 
     override suspend fun generateItinerary(prompt: String): AppResult<Itinerary> =
         itineraryComposer.compose(prompt)
 
-    override suspend fun getPlaceDetails(placeId: String): AppResult<PlaceDetails> =
-        placesDataSource.getPlaceDetails(placeId)
+    /**
+     * Live details when reachable (hours change), otherwise the last copy we kept - so a
+     * saved plan's details sheet still opens with no signal.
+     */
+    override suspend fun getPlaceDetails(placeId: String): AppResult<PlaceDetails> {
+        val live = fetchAndCacheDetails(placeId)
+        if (live is AppResult.Success) return live
+        val cached = placeDetailsCacheDao.get(placeId)
+            ?.let { row -> runCatching { json.decodeFromString<PlaceDetails>(row.detailsJson) }.getOrNull() }
+        return if (cached != null) AppResult.Success(cached) else live
+    }
+
+    private suspend fun fetchAndCacheDetails(placeId: String): AppResult<PlaceDetails> {
+        val result = placesDataSource.getPlaceDetails(placeId)
+        if (result is AppResult.Success) {
+            placeDetailsCacheDao.upsert(
+                CachedPlaceDetailsEntity(placeId, json.encodeToString(result.data), System.currentTimeMillis()),
+            )
+        }
+        return result
+    }
 
     // A details sheet re-requests its photo every time it opens; a small in-memory LRU
-    // keeps reopening the same place instant without needing a disk cache.
+    // keeps reopening the same place instant, and the disk copy keeps it working offline.
     private val photoCache = object : LruCache<String, Bitmap>(PHOTO_CACHE_ENTRIES) {}
 
     override suspend fun getPlacePhoto(photoReference: String): Bitmap? =
         photoCache.get(photoReference)
-            ?: placesDataSource.fetchPhoto(photoReference)?.also { photoCache.put(photoReference, it) }
+            ?: withContext(Dispatchers.IO) { photoDiskCache.get(photoReference) }?.also { photoCache.put(photoReference, it) }
+            ?: placesDataSource.fetchPhoto(photoReference)?.also {
+                photoCache.put(photoReference, it)
+                withContext(Dispatchers.IO) { photoDiskCache.put(photoReference, it) }
+            }
+
+    override suspend fun prefetchForOffline(itinerary: Itinerary): Boolean = coroutineScope {
+        val gate = Semaphore(PREFETCH_CONCURRENCY)
+        itinerary.places.map { place ->
+            async {
+                gate.withPermit {
+                    val details = fetchAndCacheDetails(place.id) is AppResult.Success
+                    place.photoReference?.let { getPlacePhoto(it) }
+                    details
+                }
+            }
+        }.awaitAll().all { it }
+    }
+
+    override suspend fun searchOpenNearby(query: String, bias: DeviceLocation): AppResult<List<PlaceResult>> =
+        when (val result = placesDataSource.searchPlaces(query, bias = bias, openNowOnly = true, biasRadiusMetres = 3_000)) {
+            is AppResult.Failure -> result
+            is AppResult.Success -> AppResult.Success(
+                result.data
+                    .map { it to (bias.distanceMetresTo(it.latitude, it.longitude) ?: Double.MAX_VALUE) }
+                    .filter { (_, metres) -> metres <= NEARBY_RADIUS_METRES }
+                    .sortedBy { (_, metres) -> metres }
+                    .map { (place, _) -> place },
+            )
+        }
+
+    // ---- Saved plans ---------------------------------------------------------------
 
     override fun observeSavedItineraries(userId: String): Flow<List<SavedItinerarySummary>> =
         savedItineraryDao.observeAll(userId).map { rows ->
@@ -123,16 +202,19 @@ class PlacesRepositoryImpl @Inject constructor(
     override suspend fun saveItinerary(userId: String, itinerary: Itinerary): String {
         // One saved row per (user, prompt): saving the same plan twice updates it.
         val id = UUID.nameUUIDFromBytes("$userId|${itinerary.prompt.trim().lowercase()}".toByteArray()).toString()
-        savedItineraryDao.upsert(
-            SavedItineraryEntity(
-                id = id,
-                userId = userId,
-                destination = itinerary.destinationName,
-                dayCount = itinerary.days.size,
-                planJson = json.encodeToString(itinerary),
-                savedAt = System.currentTimeMillis(),
-            ),
+        val entity = SavedItineraryEntity(
+            id = id,
+            userId = userId,
+            destination = itinerary.destinationName,
+            dayCount = itinerary.days.size,
+            planJson = json.encodeToString(itinerary),
+            savedAt = System.currentTimeMillis(),
         )
+        savedItineraryDao.upsert(entity)
+        // A re-saved plan is no longer one that was deleted.
+        pendingPlanDeleteDao.remove(id)
+        tripReminderScheduler.schedule(id, itinerary)
+        pushPlan(entity)
         return id
     }
 
@@ -143,6 +225,90 @@ class PlacesRepositoryImpl @Inject constructor(
 
     override suspend fun deleteSavedItinerary(userId: String, id: String) {
         savedItineraryDao.delete(id, userId)
+        tripReminderScheduler.cancel(id)
+        // Remember the delete until the server has it, so a failed call does not let the
+        // next sync bring the plan back.
+        pendingPlanDeleteDao.upsert(PendingPlanDeleteEntity(id, userId))
+        runCatching { placesSupabaseDataSource.deleteSavedPlan(id, userId) }
+            .onSuccess { pendingPlanDeleteDao.remove(id) }
+            .onFailure { Log.w(TAG, "deleteSavedPlan deferred for id=$id", it) }
+    }
+
+    /** Uploads one plan; on success records that this device and the server now agree. */
+    private suspend fun pushPlan(entity: SavedItineraryEntity) {
+        runCatching {
+            placesSupabaseDataSource.upsertSavedPlan(
+                SavedPlanDto(
+                    id = entity.id,
+                    userId = entity.userId,
+                    destination = entity.destination,
+                    dayCount = entity.dayCount,
+                    plan = json.parseToJsonElement(entity.planJson),
+                    savedAt = Instant.ofEpochMilli(entity.savedAt).toString(),
+                ),
+            )
+            savedItineraryDao.markSynced(entity.id, System.currentTimeMillis())
+        }.onFailure { Log.w(TAG, "pushPlan deferred for id=${entity.id}", it) }
+    }
+
+    override suspend fun syncSavedItineraries(userId: String) {
+        runCatching {
+            // Deletes first, so a plan removed offline is not pulled straight back down.
+            pendingPlanDeleteDao.getAll(userId).forEach { pending ->
+                runCatching { placesSupabaseDataSource.deleteSavedPlan(pending.id, userId) }
+                    .onSuccess { pendingPlanDeleteDao.remove(pending.id) }
+            }
+            val stillPending = pendingPlanDeleteDao.getAll(userId).map { it.id }.toSet()
+
+            val remote = placesSupabaseDataSource.getSavedPlans(userId).filter { it.id !in stillPending }
+            val remoteById = remote.associateBy { it.id }
+            val local = savedItineraryDao.getAll(userId).associateBy { it.id }
+            val now = System.currentTimeMillis()
+
+            // Pull what the server has that this device lacks or has older.
+            remote.forEach { r ->
+                val remoteSavedAt = OffsetDateTime.parse(r.savedAt).toInstant().toEpochMilli()
+                val mine = local[r.id]
+                if (mine == null || remoteSavedAt > mine.savedAt) {
+                    val planJson = r.plan.toString()
+                    val plan = runCatching { json.decodeFromString<Itinerary>(planJson) }.getOrNull() ?: return@forEach
+                    savedItineraryDao.upsert(
+                        SavedItineraryEntity(r.id, userId, r.destination, r.dayCount, planJson, remoteSavedAt, syncedAt = now),
+                    )
+                    tripReminderScheduler.schedule(r.id, plan)
+                }
+            }
+
+            // Then reconcile what this device has that the server does not, or has older.
+            local.values.forEach { mine ->
+                val theirs = remoteById[mine.id]
+                when {
+                    theirs == null && mine.syncedAt > 0 -> {
+                        // It reached the server once and is gone now: deleted on another device.
+                        savedItineraryDao.delete(mine.id, userId)
+                        tripReminderScheduler.cancel(mine.id)
+                    }
+                    theirs == null -> pushPlan(mine)
+                    mine.savedAt > OffsetDateTime.parse(theirs.savedAt).toInstant().toEpochMilli() -> pushPlan(mine)
+                    else -> Unit
+                }
+            }
+        }.onFailure { Log.w(TAG, "syncSavedItineraries FAILED", it) }
+    }
+
+    override suspend fun clearSavedItineraries(userId: String) {
+        savedItineraryDao.getAll(userId).forEach { tripReminderScheduler.cancel(it.id) }
+        savedItineraryDao.deleteAll(userId)
+        pendingPlanDeleteDao.removeAll(userId)
+        runCatching { placesSupabaseDataSource.clearSavedPlans(userId) }
+            .onFailure { Log.w(TAG, "clearSavedPlans FAILED", it) }
+    }
+
+    override suspend fun refreshTripReminders(userId: String) {
+        savedItineraryDao.getAll(userId).forEach { row ->
+            val plan = runCatching { json.decodeFromString<Itinerary>(row.planJson) }.getOrNull() ?: return@forEach
+            tripReminderScheduler.schedule(row.id, plan)
+        }
     }
 
     /**
@@ -296,6 +462,30 @@ class PlacesRepositoryImpl @Inject constructor(
                 }
             },
         )
+    }
+
+    override suspend fun getFavoriteLists(userId: String): Result<List<FavoriteList>> = runCatching {
+        placesSupabaseDataSource.getFavoriteLists(userId).map { it.toDomain() }
+    }
+
+    override suspend fun createFavoriteList(userId: String, name: String): Result<FavoriteList> = runCatching {
+        placesSupabaseDataSource.createFavoriteList(NewFavoriteListDto(userId, name.trim())).toDomain()
+    }
+
+    override suspend fun renameFavoriteList(userId: String, listId: String, name: String): Result<Unit> = runCatching {
+        placesSupabaseDataSource.renameFavoriteList(listId, userId, name.trim())
+    }
+
+    override suspend fun deleteFavoriteList(userId: String, listId: String): Result<Unit> = runCatching {
+        placesSupabaseDataSource.deleteFavoriteList(listId, userId)
+    }
+
+    override suspend fun setFavoriteList(userId: String, placeId: String, listId: String?): Result<Unit> = runCatching {
+        placesSupabaseDataSource.setFavoriteList(placeId, userId, listId)
+    }
+
+    override suspend fun clearFavoriteLists(userId: String): Result<Unit> = runCatching {
+        placesSupabaseDataSource.clearFavoriteLists(userId)
     }
 
     override suspend fun clearFavoritePlaces(userId: String): Result<Unit> = runCatching {

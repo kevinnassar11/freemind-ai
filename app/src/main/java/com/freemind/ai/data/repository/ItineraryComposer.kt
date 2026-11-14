@@ -20,7 +20,12 @@ private fun searchFor(kind: StopKind, destination: String): Pair<String, String?
     StopKind.EAT -> "restaurants in $destination" to "restaurant"
     StopKind.SHOPPING -> "shopping and markets in $destination" to null
     StopKind.NIGHTLIFE -> "bars and nightlife in $destination" to null
+    // Added by the traveller, never searched for.
+    StopKind.CUSTOM -> destination to null
 }
+
+/** How many unused places per kind a plan keeps around for "swap". */
+private const val MAX_ALTERNATIVES_PER_KIND = 8
 
 /**
  * Builds a real day-by-day plan from live Places results, entirely on the client -
@@ -57,12 +62,18 @@ class ItineraryComposer @Inject constructor(
         }
 
         val destinationPlace = (destinationResult as? AppResult.Success)?.data?.firstOrNull()
+        val days = planDays(request.days, pools)
+        val used = days.flatMap { day -> day.stops.map { it.place.id } }.toSet()
         return AppResult.Success(
             Itinerary(
                 destinationName = request.destination,
                 prompt = prompt,
-                days = planDays(request.days, pools),
+                days = days,
                 destination = destinationPlace,
+                alternatives = pools
+                    .mapKeys { it.key.name }
+                    .mapValues { (_, places) -> places.filter { it.id !in used }.take(MAX_ALTERNATIVES_PER_KIND) }
+                    .filterValues { it.isNotEmpty() },
             ),
         )
     }

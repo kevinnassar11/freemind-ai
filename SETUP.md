@@ -75,6 +75,10 @@ the claim.
 2. **SQL Editor** → run [`supabase/migrations/20260820000000_init_schema.sql`](supabase/migrations/20260820000000_init_schema.sql)
    from this repo. This creates `profiles`, `place_search_history`,
    `favorite_places`, and their RLS policies.
+   Then run the later files in `supabase/migrations/` in date order. The newest,
+   `20261114120000_saved_plans_and_favorite_lists.sql`, adds `saved_plans` (trip plans
+   synced across devices) and `favorite_lists` (named groups of favorites). On an
+   existing project, `supabase/APPLY_TO_LIVE.sql` has the same statements.
 3. **Authentication → Sign In / Providers → Third-Party Auth → Add integration
    → Firebase.** Enter your Firebase **Project ID** (Project settings →
    General, not the project number).

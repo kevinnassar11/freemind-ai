@@ -1,5 +1,6 @@
 package com.freemind.ai.data.remote.supabase
 
+import com.freemind.ai.domain.model.FavoriteList
 import com.freemind.ai.domain.model.FavoritePlace
 import com.freemind.ai.domain.model.PlaceSearchHistoryEntry
 import com.freemind.ai.domain.model.PlaceSearchMode
@@ -27,4 +28,7 @@ fun FavoritePlaceDto.toDomain() = FavoritePlace(
     latitude = latitude,
     longitude = longitude,
     favoritedAt = Instant.parse(favoritedAt),
+    listId = listId,
 )
+
+fun FavoriteListDto.toDomain() = FavoriteList(id = id, name = name)

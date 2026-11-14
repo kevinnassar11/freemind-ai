@@ -5,6 +5,10 @@ sealed interface AppError {
     data object RateLimited : AppError
     data object Unauthorized : AppError
     data object NotConfigured : AppError
+
+    /** Location permission is granted but the device could not produce a position. */
+    data object NoLocation : AppError
+
     data class Unknown(val message: String?) : AppError
 }
 

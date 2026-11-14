@@ -7,7 +7,9 @@ import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.StopKind
 import com.freemind.ai.domain.model.distanceMetresTo
 
-private val VERBS: Map<StopKind, List<String>> = mapOf(
+/** The lead-in phrases per kind, in rotation order. Stored in plans as plain text; the UI
+ *  finds a stop's phrase here to show it in the app language (see StopVerbs). */
+internal val STOP_VERBS: Map<StopKind, List<String>> = mapOf(
     StopKind.SIGHT to listOf("Visit", "Explore", "See", "Take in", "Stroll around"),
     StopKind.CULTURE to listOf("Browse", "Step inside", "Discover", "Tour"),
     StopKind.NATURE to listOf("Wander through", "Unwind at", "Get outdoors at", "Walk around"),
@@ -71,6 +73,6 @@ fun planDays(days: Int, pools: Map<StopKind, List<PlaceResult>>): List<Itinerary
 }
 
 private fun stopFor(kind: StopKind, place: PlaceResult, day: Int): ItineraryStop {
-    val verbs = VERBS.getValue(kind)
+    val verbs = STOP_VERBS.getValue(kind)
     return ItineraryStop(kind, place, verbs[(day - 1 + kind.ordinal) % verbs.size])
 }

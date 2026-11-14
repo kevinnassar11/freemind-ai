@@ -24,6 +24,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val historyEnabled: Boolean = true,
+    val tripRemindersEnabled: Boolean = true,
     val userEmail: String? = null,
     val userDisplayName: String? = null,
     val isClearingHistory: Boolean = false,
@@ -51,12 +52,14 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.themeMode,
         settingsRepository.historyEnabled,
+        settingsRepository.tripRemindersEnabled,
         authRepository.currentUser,
         busyState,
-    ) { themeMode, historyEnabled, profile, busy ->
+    ) { themeMode, historyEnabled, remindersEnabled, profile, busy ->
         busy.copy(
             themeMode = themeMode,
             historyEnabled = historyEnabled,
+            tripRemindersEnabled = remindersEnabled,
             userEmail = profile?.email,
             userDisplayName = profile?.displayName,
         )
@@ -68,6 +71,14 @@ class SettingsViewModel @Inject constructor(
 
     fun setHistoryEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setHistoryEnabled(enabled) }
+    }
+
+    /** Turns trip reminders on or off, and schedules (or cancels) them for every saved plan. */
+    fun setTripRemindersEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setTripRemindersEnabled(enabled)
+            authRepository.userId?.let { placesRepository.refreshTripReminders(it) }
+        }
     }
 
     fun exportFavorites() {
@@ -114,6 +125,8 @@ class SettingsViewModel @Inject constructor(
             if (userId != null) {
                 placesRepository.clearSearchHistory(userId)
                 placesRepository.clearFavoritePlaces(userId)
+                placesRepository.clearFavoriteLists(userId)
+                placesRepository.clearSavedItineraries(userId)
                 supabaseRepository.deleteProfile(userId)
             }
             authRepository.deleteAccount()

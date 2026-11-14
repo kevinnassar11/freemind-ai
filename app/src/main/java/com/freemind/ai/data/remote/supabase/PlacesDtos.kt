@@ -2,6 +2,7 @@ package com.freemind.ai.data.remote.supabase
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class PlaceSearchHistoryDto(
@@ -37,6 +38,7 @@ data class FavoritePlaceDto(
     val latitude: Double? = null,
     val longitude: Double? = null,
     @SerialName("favorited_at") val favoritedAt: String,
+    @SerialName("list_id") val listId: String? = null,
 )
 
 @Serializable
@@ -58,4 +60,27 @@ data class TrendingSearchDto(
 @Serializable
 data class TrendingSearchParamsDto(
     @SerialName("result_limit") val resultLimit: Int,
+)
+
+@Serializable
+data class FavoriteListDto(
+    val id: String,
+    @SerialName("user_id") val userId: String,
+    val name: String,
+)
+
+@Serializable
+data class NewFavoriteListDto(
+    @SerialName("user_id") val userId: String,
+    val name: String,
+)
+
+@Serializable
+data class SavedPlanDto(
+    val id: String,
+    @SerialName("user_id") val userId: String,
+    val destination: String,
+    @SerialName("day_count") val dayCount: Int,
+    val plan: JsonElement,
+    @SerialName("saved_at") val savedAt: String,
 )

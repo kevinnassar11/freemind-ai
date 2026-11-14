@@ -3,9 +3,12 @@ package com.freemind.ai.ui.maps
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -46,6 +49,7 @@ import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ElevatedAssistChip
@@ -60,7 +64,9 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -89,6 +95,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freemind.ai.R
@@ -97,6 +104,7 @@ import com.freemind.ai.domain.model.PlaceFilters
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.PlaceSearchMode
 import com.freemind.ai.domain.model.TrendingSearch
+import com.freemind.ai.domain.model.dateOf
 import com.freemind.ai.domain.model.distanceMetresTo
 import com.freemind.ai.ui.components.ErrorBanner
 import com.freemind.ai.util.AppError
@@ -112,7 +120,10 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import kotlin.math.roundToInt
 
 private val DEFAULT_LOCATION = LatLng(37.7749, -122.4194)
@@ -153,6 +164,37 @@ fun MapsScreen(
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
     }
+
+    // "Open near me" needs a position. If the permission was declined at start-up, the first
+    // tap asks again; once it is granted the tapped search runs straight away.
+    val nearMeNames = NearMeCategory.entries.associateWith { stringResource(it.queryLabelRes()) }
+    val nearMeLabels = NearMeCategory.entries.associateWith { stringResource(R.string.nearme_query, nearMeNames.getValue(it)) }
+    var pendingNearMe by remember { mutableStateOf<NearMeCategory?>(null) }
+    val nearMePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        viewModel.refreshDeviceLocation()
+        val category = pendingNearMe
+        pendingNearMe = null
+        if (granted && category != null) viewModel.searchNearMe(category, nearMeLabels.getValue(category))
+    }
+
+    // Trip reminders are notifications, which need a runtime permission on Android 13+.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { }
+    val askForNotifications = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Plan dialogs and sheets that are open right now.
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showNotes by remember { mutableStateOf(false) }
+    var noteTarget by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM)
@@ -207,7 +249,8 @@ fun MapsScreen(
     // bar and the plan sheet, so it is given content padding for both (see GoogleMap
     // below) and the bounds are fitted into what is actually visible. Declared after
     // the effect above so, on first show, this wins over the plain recentre.
-    LaunchedEffect(uiState.itinerary, uiState.selectedDay, planSheetHeightPx) {
+    val framingKey = uiState.itinerary?.days?.map { day -> day.stops.map { it.place.id } }
+    LaunchedEffect(framingKey, uiState.selectedDay, planSheetHeightPx) {
         val plan = uiState.itinerary ?: return@LaunchedEffect
         // Wait for the sheet to be measured, or the first fit would ignore it.
         if (planSheetHeightPx == 0) return@LaunchedEffect
@@ -229,6 +272,47 @@ fun MapsScreen(
             }
         } catch (_: IllegalStateException) {
             // Map not laid out yet - the destination recentre above already applies.
+        }
+    }
+
+    // One-off things from the ViewModel: snackbars (some with Undo) and permission prompts.
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            fun say(message: String, action: String? = null, onAction: () -> Unit = {}) {
+                launch {
+                    val result = snackbarHostState.showSnackbar(
+                        message = message,
+                        actionLabel = action,
+                        duration = if (action != null) SnackbarDuration.Long else SnackbarDuration.Short,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) onAction()
+                }
+            }
+            when (event) {
+                is MapsEvent.StopRemoved -> say(
+                    context.getString(R.string.stop_removed, event.title),
+                    context.getString(R.string.undo),
+                ) { viewModel.undoEdit() }
+                MapsEvent.NothingToSwap -> say(context.getString(R.string.stop_nothing_to_swap))
+                MapsEvent.StopAlreadyInDay -> say(context.getString(R.string.stop_already_in_day))
+                MapsEvent.WeatherArranged -> say(
+                    context.getString(R.string.plan_weather_arranged),
+                    context.getString(R.string.undo),
+                ) { viewModel.undoEdit() }
+                MapsEvent.WeatherAlreadyBest -> say(context.getString(R.string.plan_weather_already_best))
+                is MapsEvent.PlanSaved -> {
+                    say(context.getString(R.string.plan_saved_toast))
+                    if (event.wantsReminders) askForNotifications()
+                }
+                is MapsEvent.OfflineReady -> say(
+                    context.getString(if (event.complete) R.string.plan_offline_ready else R.string.plan_offline_partial),
+                )
+                MapsEvent.AskNotificationPermission -> askForNotifications()
+                is MapsEvent.NeedLocationPermission -> {
+                    pendingNearMe = event.category
+                    nearMePermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                }
+            }
         }
     }
 
@@ -362,6 +446,9 @@ fun MapsScreen(
                     .semantics { contentDescription = searchFieldLabel },
                 placeholder = { Text(stringResource(uiState.mode.hintRes)) },
                 singleLine = true,
+                // Follow the typed text's own direction, so an English prompt in an Arabic
+                // layout (or the reverse) isn't scrambled by the surrounding RTL/LTR.
+                textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content),
                 shape = RoundedCornerShape(28.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -388,6 +475,18 @@ fun MapsScreen(
                     viewModel.search()
                 }),
             )
+
+            AnimatedVisibility(
+                visible = uiState.query.isBlank() && !uiState.hasSearched && uiState.itinerary == null,
+                enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                exit = fadeOut(tween(200)) + shrinkVertically(tween(200)),
+            ) {
+                NearMeRow(
+                    labels = nearMeNames,
+                    onSelect = { category -> viewModel.searchNearMe(category, nearMeLabels.getValue(category)) },
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+                )
+            }
 
             AnimatedVisibility(
                 visible = uiState.itinerary == null && uiState.unfilteredResults.isNotEmpty(),
@@ -453,7 +552,6 @@ fun MapsScreen(
 
         val itinerary = uiState.itinerary
         val scope = rememberCoroutineScope()
-        val planSavedMessage = stringResource(R.string.plan_saved_toast)
         val planShareChooser = stringResource(R.string.plan_share_chooser)
         val bottomSheetEnter = fadeIn(tween(320)) + slideInVertically(tween(320)) { it / 4 }
         val bottomSheetExit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { it / 4 }
@@ -465,25 +563,89 @@ fun MapsScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             if (itinerary != null) {
+                val actions = remember(viewModel, itinerary) {
+                    PlanActions(
+                        onSelectDay = viewModel::selectDay,
+                        onSave = viewModel::toggleSavePlan,
+                        onShareText = {
+                            context.shareText(itinerary.toShareText(context.planShareLabels(itinerary)), planShareChooser)
+                        },
+                        onSharePdf = {
+                            scope.launch {
+                                val labels = context.planShareLabels(itinerary)
+                                val uri = withContext(Dispatchers.IO) { context.exportPlanPdf(itinerary, labels) }
+                                context.sharePdf(uri, planShareChooser)
+                            }
+                        },
+                        onStopClick = viewModel::selectPlace,
+                        onStopDetails = viewModel::openDetails,
+                        onRemoveStop = viewModel::removeStop,
+                        onMoveStop = viewModel::moveStop,
+                        onMoveStopToDay = viewModel::moveStopToDay,
+                        onSwapStop = viewModel::swapStop,
+                        onEditNote = { day, index -> noteTarget = day to index },
+                        onAddStop = viewModel::openAddStop,
+                        onPickDate = { showDatePicker = true },
+                        onMatchWeather = viewModel::matchWeather,
+                        onOpenNotes = { showNotes = true },
+                    )
+                }
                 ItinerarySheet(
                     plan = itinerary,
                     selectedDay = uiState.selectedDay,
                     isSaved = uiState.savedItineraryId != null,
-                    onSelectDay = viewModel::selectDay,
-                    onSave = {
-                        val wasSaved = uiState.savedItineraryId != null
-                        viewModel.toggleSavePlan()
-                        if (!wasSaved) scope.launch { snackbarHostState.showSnackbar(planSavedMessage) }
-                    },
-                    onShare = { context.shareText(itinerary.toShareText(), planShareChooser) },
-                    onStopClick = viewModel::selectPlace,
-                    onStopDetails = viewModel::openDetails,
+                    forecasts = uiState.forecasts,
+                    actions = actions,
                     modifier = Modifier
                         .onSizeChanged { planSheetHeightPx = it.height }
                         .fillMaxWidth()
                         .padding(16.dp),
                 )
             }
+        }
+
+        if (itinerary != null) {
+            if (showDatePicker) {
+                StartDateDialog(
+                    current = itinerary.dateOf(1),
+                    onPick = { date -> showDatePicker = false; viewModel.setStartDate(date) },
+                    onClear = { showDatePicker = false; viewModel.setStartDate(null) },
+                    onDismiss = { showDatePicker = false },
+                )
+            }
+            if (showNotes) {
+                TripNotesSheet(
+                    notes = itinerary.notes,
+                    checklist = itinerary.checklist,
+                    onNotesChange = viewModel::setNotes,
+                    onAddItem = viewModel::addChecklistItem,
+                    onToggleItem = viewModel::toggleChecklistItem,
+                    onRemoveItem = viewModel::removeChecklistItem,
+                    onDismiss = { showNotes = false },
+                )
+            }
+            noteTarget?.let { (day, index) ->
+                val stop = itinerary.days.firstOrNull { it.day == day }?.stops?.getOrNull(index)
+                if (stop == null) {
+                    noteTarget = null
+                } else {
+                    StopNoteDialog(
+                        placeTitle = stop.place.title,
+                        initial = stop.note,
+                        onSave = { note -> viewModel.setStopNote(day, index, note); noteTarget = null },
+                        onDismiss = { noteTarget = null },
+                    )
+                }
+            }
+        }
+        uiState.addStop?.let { addStop ->
+            AddStopDialog(
+                state = addStop,
+                onQueryChange = viewModel::onAddStopQueryChange,
+                onSearch = viewModel::searchAddStop,
+                onPick = viewModel::confirmAddStop,
+                onDismiss = viewModel::closeAddStop,
+            )
         }
 
         AnimatedVisibility(
@@ -565,6 +727,46 @@ fun MapsScreen(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp),
         )
+    }
+}
+
+private fun NearMeCategory.queryLabelRes(): Int = when (this) {
+    NearMeCategory.RESTAURANTS -> R.string.nearme_restaurants
+    NearMeCategory.CAFES -> R.string.nearme_cafes
+    NearMeCategory.BARS -> R.string.nearme_bars
+    NearMeCategory.PHARMACIES -> R.string.nearme_pharmacies
+    NearMeCategory.SUPERMARKETS -> R.string.nearme_supermarkets
+}
+
+/** One-tap "what's open right now, near me" shortcuts, shown before the first search. */
+@Composable
+private fun NearMeRow(
+    labels: Map<NearMeCategory, String>,
+    onSelect: (NearMeCategory) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NearMeCategory.entries.forEach { category ->
+            ElevatedAssistChip(
+                onClick = { onSelect(category) },
+                label = { Text(labels.getValue(category)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.NearMe,
+                        contentDescription = null,
+                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                    )
+                },
+                colors = AssistChipDefaults.elevatedAssistChipColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = AssistChipDefaults.elevatedAssistChipElevation(),
+            )
+        }
     }
 }
 
@@ -859,6 +1061,7 @@ private fun AppError.toMapsMessage(): String = when (this) {
     AppError.RateLimited -> stringResource(R.string.error_rate_limited)
     AppError.Unauthorized -> stringResource(R.string.error_maps_denied)
     AppError.NotConfigured -> stringResource(R.string.error_maps_not_configured)
+    AppError.NoLocation -> stringResource(R.string.error_no_location)
     is AppError.Unknown -> message ?: stringResource(R.string.error_generic)
 }
 
@@ -871,5 +1074,6 @@ private fun AppError.toFavoriteMessage(): String = when (this) {
     AppError.RateLimited -> stringResource(R.string.error_rate_limited)
     AppError.Unauthorized -> stringResource(R.string.error_maps_denied)
     AppError.NotConfigured -> stringResource(R.string.error_maps_not_configured)
+    AppError.NoLocation -> stringResource(R.string.error_no_location)
     is AppError.Unknown -> stringResource(R.string.error_favorite_action_failed)
 }

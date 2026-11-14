@@ -16,6 +16,8 @@ class PlacesSupabaseDataSource @Inject constructor(
 ) {
     private val historyTable get() = supabaseClient.from("place_search_history")
     private val favoritesTable get() = supabaseClient.from("favorite_places")
+    private val listsTable get() = supabaseClient.from("favorite_lists")
+    private val plansTable get() = supabaseClient.from("saved_plans")
 
     suspend fun recordSearch(entry: NewPlaceSearchHistoryDto) {
         historyTable.insert(entry)
@@ -66,6 +68,71 @@ class PlacesSupabaseDataSource @Inject constructor(
         favoritesTable.delete {
             filter { eq("user_id", userId) }
         }
+    }
+
+    // ---- Favorite lists --------------------------------------------------------
+
+    suspend fun getFavoriteLists(userId: String): List<FavoriteListDto> =
+        listsTable.select {
+            filter { eq("user_id", userId) }
+            order(column = "created_at", order = Order.ASCENDING)
+        }.decodeList()
+
+    suspend fun createFavoriteList(list: NewFavoriteListDto): FavoriteListDto =
+        listsTable.insert(list) { select() }.decodeSingle()
+
+    suspend fun renameFavoriteList(id: String, userId: String, name: String) {
+        listsTable.update({ set("name", name) }) {
+            filter {
+                eq("id", id)
+                eq("user_id", userId)
+            }
+        }
+    }
+
+    suspend fun deleteFavoriteList(id: String, userId: String) {
+        listsTable.delete {
+            filter {
+                eq("id", id)
+                eq("user_id", userId)
+            }
+        }
+    }
+
+    suspend fun clearFavoriteLists(userId: String) {
+        listsTable.delete { filter { eq("user_id", userId) } }
+    }
+
+    /** Files a favorite under [listId], or takes it out of any list when null. */
+    suspend fun setFavoriteList(placeId: String, userId: String, listId: String?) {
+        favoritesTable.update({ set("list_id", listId) }) {
+            filter {
+                eq("place_id", placeId)
+                eq("user_id", userId)
+            }
+        }
+    }
+
+    // ---- Saved plans -------------------------------------------------------------
+
+    suspend fun getSavedPlans(userId: String): List<SavedPlanDto> =
+        plansTable.select { filter { eq("user_id", userId) } }.decodeList()
+
+    suspend fun upsertSavedPlan(plan: SavedPlanDto) {
+        plansTable.upsert(plan)
+    }
+
+    suspend fun deleteSavedPlan(id: String, userId: String) {
+        plansTable.delete {
+            filter {
+                eq("id", id)
+                eq("user_id", userId)
+            }
+        }
+    }
+
+    suspend fun clearSavedPlans(userId: String) {
+        plansTable.delete { filter { eq("user_id", userId) } }
     }
 
     suspend fun getTrendingSearches(limit: Int): List<TrendingSearchDto> =

@@ -1,6 +1,9 @@
 package com.freemind.ai.domain.model
 
+import kotlinx.serialization.Serializable
+
 /** Extra detail fetched on demand for one place - not part of a search result. */
+@Serializable
 data class PlaceDetails(
     val phone: String?,
     /** International format, safe to hand to the dialler. */

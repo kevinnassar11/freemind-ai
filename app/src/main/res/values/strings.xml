@@ -3,7 +3,7 @@
     <string name="app_name">FreeMind AI</string>
     <string name="app_tagline">Find your way, freely.</string>
 
-    <string name="default_notification_channel_id">freemind_updates</string>
+    <string name="default_notification_channel_id" translatable="false">freemind_updates</string>
     <string name="default_notification_channel_name">Updates &amp; tips</string>
 
     <!-- Sign in -->
@@ -141,4 +141,109 @@
     <string name="plans_empty">Trip plans you save will show up here. Ask for one in Prompt mode — e.g. “5 days in Istanbul, I love eating and sights”.</string>
     <string name="plans_row_subtitle">%1$d-day plan • %2$s</string>
     <string name="plan_delete">Delete plan</string>
+
+    <!-- Common -->
+    <string name="save">Save</string>
+    <string name="undo">Undo</string>
+    <string name="error_no_location">Couldn\'t get your location. Check that location is on and try again.</string>
+
+    <!-- Editing a plan -->
+    <string name="slot_added">Added by you</string>
+    <string name="plan_add_stop">Add a stop</string>
+    <string name="plan_day_empty">Nothing planned for this day yet.</string>
+    <string name="stop_more">More options</string>
+    <string name="stop_move_up">Move up</string>
+    <string name="stop_move_down">Move down</string>
+    <string name="stop_move_to_day">Move to day %1$d</string>
+    <string name="stop_swap">Swap for another place</string>
+    <string name="stop_add_note">Add a note</string>
+    <string name="stop_edit_note">Edit note</string>
+    <string name="stop_remove">Remove</string>
+    <string name="stop_note_label">Note (booking time, reference…)</string>
+    <string name="stop_removed">Removed %1$s</string>
+    <string name="stop_nothing_to_swap">No other places to swap in for this stop.</string>
+    <string name="stop_already_in_day">That place is already on that day.</string>
+    <string name="add_stop_title">Add a stop to day %1$d</string>
+    <string name="add_stop_hint">Search for a place</string>
+    <string name="add_stop_failed">Couldn\'t search right now. Check your connection.</string>
+
+    <!-- Dates & weather -->
+    <string name="plan_set_dates">Set dates</string>
+    <string name="plan_clear_dates">Clear dates</string>
+    <string name="plan_match_weather">Match weather</string>
+    <string name="plan_weather_arranged">Moved outdoor days to the driest dates.</string>
+    <string name="plan_weather_already_best">Your days already suit the forecast.</string>
+    <string name="stop_rain_warning">Rain likely this day</string>
+    <string name="weather_rain_chance">%1$d%% rain</string>
+    <string name="weather_clear">Clear</string>
+    <string name="weather_partly_cloudy">Partly cloudy</string>
+    <string name="weather_cloudy">Cloudy</string>
+    <string name="weather_fog">Fog</string>
+    <string name="weather_rain">Rain</string>
+    <string name="weather_storm">Thunderstorms</string>
+    <string name="weather_snow">Snow</string>
+
+    <!-- Notes & checklist -->
+    <string name="plan_notes">Notes</string>
+    <string name="plan_notes_with_count">Notes · %1$d to do</string>
+    <string name="notes_title">Trip notes</string>
+    <string name="notes_label">Notes, bookings, ideas</string>
+    <string name="checklist_title">Checklist</string>
+    <string name="checklist_add_hint">Add an item</string>
+    <string name="checklist_remove">Remove item</string>
+    <string name="checklist_starter_hint">Start from a few common items:</string>
+    <string name="checklist_passport">Passport</string>
+    <string name="checklist_tickets">Tickets</string>
+    <string name="checklist_charger">Phone charger</string>
+    <string name="checklist_cash">Cash</string>
+    <string name="checklist_sunscreen">Sunscreen</string>
+    <string name="checklist_medication">Medication</string>
+
+    <!-- Sharing -->
+    <string name="plan_share_text">Share as text with map links</string>
+    <string name="plan_share_pdf">Share as PDF</string>
+    <string name="share_route">Route</string>
+    <string name="share_notes">Notes</string>
+    <string name="share_checklist">Checklist</string>
+    <string name="share_footer">Planned with FreeMind AI</string>
+
+    <!-- Offline -->
+    <string name="plan_offline_ready">Saved, and available offline.</string>
+    <string name="plan_offline_partial">Saved. Some details couldn\'t be downloaded for offline use.</string>
+
+    <!-- Near me, open now -->
+    <string name="nearme_restaurants">Restaurants</string>
+    <string name="nearme_cafes">Cafés</string>
+    <string name="nearme_bars">Bars</string>
+    <string name="nearme_pharmacies">Pharmacies</string>
+    <string name="nearme_supermarkets">Supermarkets</string>
+    <string name="nearme_query">%1$s open now</string>
+
+    <!-- Favorite lists -->
+    <string name="lists_all">All</string>
+    <string name="lists_new">New list</string>
+    <string name="lists_rename">Rename</string>
+    <string name="lists_delete">Delete list</string>
+    <string name="lists_name_label">List name</string>
+    <string name="lists_delete_title">Delete \"%1$s\"?</string>
+    <string name="lists_delete_body">The places in it are kept - they just won\'t be in a list any more.</string>
+    <string name="lists_move_title">File \"%1$s\" under…</string>
+    <string name="lists_none">No list</string>
+    <string name="lists_move_content_description">Choose a list</string>
+    <string name="lists_empty">Nothing in this list yet. Tap the folder icon on a favorite to file it here.</string>
+    <string name="lists_error_create">Couldn\'t create the list. The name may already be used.</string>
+    <string name="lists_error_rename">Couldn\'t rename the list.</string>
+    <string name="lists_error_delete">Couldn\'t delete the list.</string>
+    <string name="lists_error_move">Couldn\'t move that place.</string>
+
+    <!-- Settings: language & reminders -->
+    <string name="settings_language">Language</string>
+    <string name="language_system">System default</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="trip_reminders_label">Trip reminders</string>
+    <string name="trip_reminders_description">The evening before a saved trip, and each morning of it, with that day\'s stops.</string>
+    <string name="trip_reminders_channel_name">Trip reminders</string>
+    <string name="reminder_eve_title">Your trip to %1$s starts tomorrow</string>
+    <string name="reminder_day_title">Day %1$d in %2$s</string>
+    <string name="reminder_empty_day">Nothing planned yet. Tap to add stops.</string>
 </resources>

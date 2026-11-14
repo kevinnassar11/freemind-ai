@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same order as values/arrays.xml - a stored English phrase is looked up by position. -->
+    <string-array name="verbs_sight">
+        <item>زيارة</item>
+        <item>استكشاف</item>
+        <item>مشاهدة</item>
+        <item>التمتع بمنظر</item>
+        <item>التجول حول</item>
+    </string-array>
+    <string-array name="verbs_culture">
+        <item>تصفّح</item>
+        <item>الدخول إلى</item>
+        <item>اكتشاف</item>
+        <item>جولة في</item>
+    </string-array>
+    <string-array name="verbs_nature">
+        <item>التجول في</item>
+        <item>الاسترخاء في</item>
+        <item>قضاء وقت في الهواء الطلق في</item>
+        <item>المشي في</item>
+    </string-array>
+    <string-array name="verbs_eat">
+        <item>الغداء في</item>
+        <item>تناول الطعام في</item>
+        <item>العشاء في</item>
+        <item>استعادة النشاط في</item>
+        <item>تذوق الطعام المحلي في</item>
+    </string-array>
+    <string-array name="verbs_swim">
+        <item>السباحة في</item>
+        <item>الانتعاش في</item>
+        <item>الاسترخاء في</item>
+        <item>قضاء فترة بعد الظهر في</item>
+    </string-array>
+    <string-array name="verbs_shopping">
+        <item>التسوق في</item>
+        <item>تصفّح</item>
+        <item>شراء الهدايا التذكارية من</item>
+        <item>التجول في</item>
+    </string-array>
+    <string-array name="verbs_nightlife">
+        <item>مشروبات المساء في</item>
+        <item>إنهاء الليلة في</item>
+        <item>الخروج إلى</item>
+        <item>مشروب أخير في</item>
+    </string-array>
+</resources>

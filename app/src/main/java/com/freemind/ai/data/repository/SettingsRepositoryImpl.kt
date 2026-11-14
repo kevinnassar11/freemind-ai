@@ -13,6 +13,7 @@ import javax.inject.Singleton
 
 private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 private val HISTORY_ENABLED_KEY = booleanPreferencesKey("history_enabled")
+private val TRIP_REMINDERS_KEY = booleanPreferencesKey("trip_reminders_enabled")
 
 @Singleton
 class SettingsRepositoryImpl @Inject constructor(
@@ -39,5 +40,13 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setHistoryEnabled(enabled: Boolean) {
         dataStore.edit { it[HISTORY_ENABLED_KEY] = enabled }
         authRepository.userId?.let { uid -> supabaseRepository.setHistoryEnabled(uid, enabled) }
+    }
+
+    override val tripRemindersEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[TRIP_REMINDERS_KEY] ?: true
+    }
+
+    override suspend fun setTripRemindersEnabled(enabled: Boolean) {
+        dataStore.edit { it[TRIP_REMINDERS_KEY] = enabled }
     }
 }

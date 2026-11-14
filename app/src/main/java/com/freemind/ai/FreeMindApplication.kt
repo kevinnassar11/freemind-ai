@@ -7,6 +7,7 @@ import android.os.Build
 import com.freemind.ai.data.repository.AuthRepository
 import com.freemind.ai.data.repository.PlacesRepository
 import com.freemind.ai.di.ApplicationScope
+import com.freemind.ai.notifications.TRIP_CHANNEL_ID
 import com.freemind.ai.util.ConnectivityObserver
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +40,11 @@ class FreeMindApplication : Application() {
     private fun observeConnectivityForPendingFavorites() {
         applicationScope.launch {
             connectivityObserver.isOnline.filter { online -> online }.collect {
-                authRepository.userId?.let { userId -> placesRepository.flushPendingFavorites(userId) }
+                authRepository.userId?.let { userId ->
+                    placesRepository.flushPendingFavorites(userId)
+                    // Saved plans follow the account: pick up other devices' plans, push ours.
+                    placesRepository.syncSavedItineraries(userId)
+                }
             }
         }
     }
@@ -53,5 +58,12 @@ class FreeMindApplication : Application() {
         )
         val manager = getSystemService(NotificationManager::class.java)
         manager?.createNotificationChannel(channel)
+        manager?.createNotificationChannel(
+            NotificationChannel(
+                TRIP_CHANNEL_ID,
+                getString(R.string.trip_reminders_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+        )
     }
 }

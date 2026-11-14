@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FreeMind AI</string>
+    <string name="app_tagline">اعثر على طريقك بحرية.</string>
+
+    <string name="default_notification_channel_name">التحديثات والنصائح</string>
+
+    <!-- Sign in -->
+    <string name="sign_in_title">مرحبًا بك في FreeMind AI</string>
+    <string name="sign_in_subtitle">سجّل الدخول لحفظ عمليات البحث وأماكنك المفضلة.</string>
+    <string name="sign_in_with_google">المتابعة باستخدام Google</string>
+    <string name="sign_in_error">تعذّر تسجيل دخولك. يرجى المحاولة مرة أخرى.</string>
+
+    <!-- History -->
+    <string name="history_title">السجل</string>
+    <string name="history_empty">ستظهر عمليات البحث السابقة هنا.</string>
+    <string name="history_result_subtitle">%1$s • %2$s</string>
+    <string name="delete_search_history_entry">حذف</string>
+
+    <!-- Favorites -->
+    <string name="favorites_title">المفضلة</string>
+    <string name="favorites_empty">ستظهر هنا الأماكن التي تحفظها.</string>
+    <string name="favorite_content_description">الحفظ في المفضلة</string>
+    <string name="unfavorite_content_description">الإزالة من المفضلة</string>
+
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_appearance">المظهر</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <string name="theme_system">افتراضي النظام</string>
+    <string name="settings_data">البيانات</string>
+    <string name="clear_search_history">مسح سجل البحث</string>
+    <string name="clear_search_history_confirm_title">هل تريد مسح كل سجل البحث؟</string>
+    <string name="clear_search_history_confirm_body">سيؤدي هذا إلى حذف كل عمليات البحث المحفوظة عن الأماكن. تبقى المفضلة كما هي. لا يمكن التراجع عن ذلك.</string>
+    <string name="history_enabled_label">حفظ سجل البحث</string>
+    <string name="history_enabled_description">عند الإيقاف، لن تُسجَّل عمليات البحث إطلاقًا، فلا يبقى شيء جديد لمسحه لاحقًا.</string>
+    <string name="settings_export">تصدير بياناتك</string>
+    <string name="export_favorites">تصدير المفضلة (CSV)</string>
+    <string name="export_history">تصدير سجل البحث (CSV)</string>
+    <string name="export_empty">لا يوجد شيء للتصدير بعد.</string>
+    <string name="settings_account">الحساب</string>
+    <string name="signed_in_as">تم تسجيل الدخول باسم %1$s</string>
+    <string name="sign_out">تسجيل الخروج</string>
+    <string name="sign_out_confirm_title">هل تريد تسجيل الخروج؟</string>
+    <string name="delete_account">حذف الحساب</string>
+    <string name="delete_account_confirm_title">هل تريد حذف حسابك؟</string>
+    <string name="delete_account_confirm_body">سيؤدي هذا إلى حذف ملفك الشخصي وسجل البحث والمفضلة وخطط الرحلات نهائيًا. لا يمكن التراجع عن ذلك.</string>
+    <string name="cancel">إلغاء</string>
+    <string name="confirm">تأكيد</string>
+
+    <!-- Errors -->
+    <string name="error_network">أنت غير متصل. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="error_rate_limited">لقد بلغت الحد المسموح به في الساعة. حاول مرة أخرى بعد قليل.</string>
+    <string name="error_generic">حدث خطأ ما. يرجى المحاولة مرة أخرى.</string>
+    <string name="error_favorite_action_failed">تعذّر تحديث المفضلة. يرجى المحاولة مرة أخرى.</string>
+    <string name="retry">إعادة المحاولة</string>
+
+    <!-- Nav -->
+    <string name="nav_history">السجل</string>
+    <string name="nav_favorites">المفضلة</string>
+    <string name="nav_maps">الأماكن</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <!-- Places / maps -->
+    <string name="maps_search_placeholder">ابحث عن مكان</string>
+    <string name="itinerary_title">خطة رحلتك</string>
+    <string name="mode_prompt">سؤال</string>
+    <string name="mode_cities">المدن</string>
+    <string name="mode_countries">الدول</string>
+    <string name="mode_places">الأماكن</string>
+    <string name="mode_food">الطعام</string>
+    <string name="mode_culture">الثقافة</string>
+    <string name="mode_shopping">التسوق</string>
+    <string name="maps_hint_prompt">اسأل عن أي موقع</string>
+    <string name="maps_hint_cities">ابدأ بكتابة اسم مدينة…</string>
+    <string name="maps_hint_countries">ابدأ بكتابة اسم دولة…</string>
+    <string name="maps_hint_places">ابدأ بكتابة اسم مكان…</string>
+    <string name="maps_hint_food">ابدأ بكتابة اسم مطعم…</string>
+    <string name="maps_hint_culture">ابدأ بكتابة اسم متحف أو معرض…</string>
+    <string name="maps_hint_shopping">ابدأ بكتابة اسم مكان للتسوق…</string>
+    <string name="maps_clear">مسح البحث</string>
+    <string name="maps_no_results">لم يتم العثور على أماكن لـ «%1$s».</string>
+    <plurals name="maps_results_count">
+        <item quantity="zero">%1$d مكان</item>
+        <item quantity="one">مكان واحد</item>
+        <item quantity="two">مكانان</item>
+        <item quantity="few">%1$d أماكن</item>
+        <item quantity="many">%1$d مكانًا</item>
+        <item quantity="other">%1$d مكان</item>
+    </plurals>
+    <string name="history_load_error">تعذّر تحميل عمليات البحث. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="favorites_load_error">تعذّر تحميل المفضلة. تحقق من اتصالك وحاول مرة أخرى.</string>
+    <string name="maps_search_field_label">البحث عن أماكن</string>
+    <string name="maps_directions">الاتجاهات</string>
+    <string name="maps_open_in_maps">فتح في خرائط Google</string>
+    <string name="maps_my_location">إظهار موقعي</string>
+    <string name="maps_distance_km">على بعد %1$s كم</string>
+    <string name="maps_distance_m">على بعد %1$d م</string>
+    <string name="maps_location_rationale">اسمح بالوصول إلى الموقع لتستخدم عمليات البحث «بالقرب مني» موقعك الفعلي.</string>
+    <string name="error_maps_not_configured">لم يتم إعداد الخرائط بعد. أضف MAPS_API_KEY إلى local.properties — راجع SETUP.md.</string>
+    <string name="error_maps_denied">رفضت الخرائط الطلب. تحقق من قيود مفتاح API ومن تفعيل Places API.</string>
+    <string name="error_no_location">تعذّر تحديد موقعك. تأكد من تشغيل الموقع وحاول مرة أخرى.</string>
+    <string name="showing_cached_results">تُعرض النتائج المحفوظة — أنت غير متصل.</string>
+
+    <!-- Trip plans -->
+    <string name="plan_title">خطة %1$d أيام في %2$s</string>
+    <string name="plan_all_days">كل الأيام</string>
+    <string name="plan_day_chip">اليوم %1$d</string>
+    <string name="plan_day_header">اليوم %1$d</string>
+    <string name="plan_save">حفظ الخطة</string>
+    <string name="plan_unsave">إزالة الخطة المحفوظة</string>
+    <string name="plan_share">مشاركة الخطة</string>
+    <string name="plan_share_chooser">شارك خطة رحلتك</string>
+    <string name="plan_saved_toast">تم حفظ الخطة في المفضلة ‹ الخطط</string>
+    <string name="slot_morning">الصباح</string>
+    <string name="slot_midday">الظهيرة</string>
+    <string name="slot_afternoon">بعد الظهر</string>
+    <string name="slot_evening">المساء</string>
+    <string name="stop_details">التفاصيل</string>
+
+    <!-- Filters -->
+    <string name="filter_open_now">مفتوح الآن</string>
+    <string name="filter_rating_4">4.0★ فأكثر</string>
+    <string name="filter_price_2">حتى $$</string>
+    <string name="filter_clear">مسح عوامل التصفية</string>
+    <string name="maps_no_filter_matches">لا توجد نتائج تطابق عوامل التصفية.</string>
+    <string name="maps_filtered_count">يُعرض %1$d من %2$d</string>
+    <string name="place_open_now">مفتوح الآن</string>
+    <string name="place_closed_now">مغلق الآن</string>
+
+    <!-- Place details -->
+    <string name="details_hours">ساعات العمل</string>
+    <string name="details_call">اتصال</string>
+    <string name="details_website">الموقع</string>
+    <string name="details_share">مشاركة</string>
+    <string name="details_loading">جارٍ تحميل التفاصيل…</string>
+    <string name="details_unavailable">لا تتوفر تفاصيل إضافية حاليًا.</string>
+    <string name="details_close">إغلاق</string>
+    <string name="details_photo_description">صورة %1$s</string>
+
+    <!-- Saved plans (Favorites tab) -->
+    <string name="favorites_tab_places">الأماكن</string>
+    <string name="favorites_tab_plans">الخطط</string>
+    <string name="plans_empty">ستظهر هنا خطط الرحلات التي تحفظها. اطلب واحدة في وضع السؤال — مثل «5 أيام في إسطنبول، أحب الطعام والمعالم».</string>
+    <string name="plans_row_subtitle">خطة %1$d أيام • %2$s</string>
+    <string name="plan_delete">حذف الخطة</string>
+
+    <!-- Common -->
+    <string name="save">حفظ</string>
+    <string name="undo">تراجع</string>
+
+    <!-- Editing a plan -->
+    <string name="slot_added">أضفته أنت</string>
+    <string name="plan_add_stop">إضافة محطة</string>
+    <string name="plan_day_empty">لا يوجد شيء مخطط لهذا اليوم بعد.</string>
+    <string name="stop_more">خيارات أخرى</string>
+    <string name="stop_move_up">نقل لأعلى</string>
+    <string name="stop_move_down">نقل لأسفل</string>
+    <string name="stop_move_to_day">نقل إلى اليوم %1$d</string>
+    <string name="stop_swap">استبدال بمكان آخر</string>
+    <string name="stop_add_note">إضافة ملاحظة</string>
+    <string name="stop_edit_note">تعديل الملاحظة</string>
+    <string name="stop_remove">إزالة</string>
+    <string name="stop_note_label">ملاحظة (موعد الحجز، رقم المرجع…)</string>
+    <string name="stop_removed">تمت إزالة %1$s</string>
+    <string name="stop_nothing_to_swap">لا توجد أماكن أخرى لاستبدال هذه المحطة بها.</string>
+    <string name="stop_already_in_day">هذا المكان موجود بالفعل في ذلك اليوم.</string>
+    <string name="add_stop_title">إضافة محطة إلى اليوم %1$d</string>
+    <string name="add_stop_hint">ابحث عن مكان</string>
+    <string name="add_stop_failed">تعذّر البحث الآن. تحقق من اتصالك.</string>
+
+    <!-- Dates & weather -->
+    <string name="plan_set_dates">تحديد التواريخ</string>
+    <string name="plan_clear_dates">مسح التواريخ</string>
+    <string name="plan_match_weather">مواءمة الطقس</string>
+    <string name="plan_weather_arranged">نُقلت أيام الأنشطة الخارجية إلى أكثر التواريخ جفافًا.</string>
+    <string name="plan_weather_already_best">أيامك تناسب التوقعات بالفعل.</string>
+    <string name="stop_rain_warning">المطر محتمل في هذا اليوم</string>
+    <string name="weather_rain_chance">مطر %1$d%%</string>
+    <string name="weather_clear">صافٍ</string>
+    <string name="weather_partly_cloudy">غائم جزئيًا</string>
+    <string name="weather_cloudy">غائم</string>
+    <string name="weather_fog">ضباب</string>
+    <string name="weather_rain">مطر</string>
+    <string name="weather_storm">عواصف رعدية</string>
+    <string name="weather_snow">ثلج</string>
+
+    <!-- Notes & checklist -->
+    <string name="plan_notes">ملاحظات</string>
+    <string name="plan_notes_with_count">ملاحظات · %1$d متبقٍ</string>
+    <string name="notes_title">ملاحظات الرحلة</string>
+    <string name="notes_label">ملاحظات وحجوزات وأفكار</string>
+    <string name="checklist_title">قائمة المهام</string>
+    <string name="checklist_add_hint">إضافة عنصر</string>
+    <string name="checklist_remove">إزالة العنصر</string>
+    <string name="checklist_starter_hint">ابدأ ببعض العناصر الشائعة:</string>
+    <string name="checklist_passport">جواز السفر</string>
+    <string name="checklist_tickets">التذاكر</string>
+    <string name="checklist_charger">شاحن الهاتف</string>
+    <string name="checklist_cash">نقد</string>
+    <string name="checklist_sunscreen">واقي الشمس</string>
+    <string name="checklist_medication">الأدوية</string>
+
+    <!-- Sharing -->
+    <string name="plan_share_text">مشاركة كنص مع روابط الخرائط</string>
+    <string name="plan_share_pdf">مشاركة كملف PDF</string>
+    <string name="share_route">المسار</string>
+    <string name="share_notes">ملاحظات</string>
+    <string name="share_checklist">قائمة المهام</string>
+    <string name="share_footer">خُطط باستخدام FreeMind AI</string>
+
+    <!-- Offline -->
+    <string name="plan_offline_ready">تم الحفظ، والخطة متاحة دون اتصال.</string>
+    <string name="plan_offline_partial">تم الحفظ. تعذّر تنزيل بعض التفاصيل للاستخدام دون اتصال.</string>
+
+    <!-- Near me, open now -->
+    <string name="nearme_restaurants">مطاعم</string>
+    <string name="nearme_cafes">مقاهٍ</string>
+    <string name="nearme_bars">حانات</string>
+    <string name="nearme_pharmacies">صيدليات</string>
+    <string name="nearme_supermarkets">متاجر بقالة</string>
+    <string name="nearme_query">%1$s مفتوحة الآن</string>
+
+    <!-- Favorite lists -->
+    <string name="lists_all">الكل</string>
+    <string name="lists_new">قائمة جديدة</string>
+    <string name="lists_rename">إعادة تسمية</string>
+    <string name="lists_delete">حذف القائمة</string>
+    <string name="lists_name_label">اسم القائمة</string>
+    <string name="lists_delete_title">هل تريد حذف «%1$s»؟</string>
+    <string name="lists_delete_body">تبقى الأماكن التي فيها — فقط لن تكون ضمن قائمة بعد الآن.</string>
+    <string name="lists_move_title">تصنيف «%1$s» ضمن…</string>
+    <string name="lists_none">بلا قائمة</string>
+    <string name="lists_move_content_description">اختيار قائمة</string>
+    <string name="lists_empty">لا شيء في هذه القائمة بعد. اضغط على أيقونة المجلد في أحد المفضلات لوضعه هنا.</string>
+    <string name="lists_error_create">تعذّر إنشاء القائمة. قد يكون الاسم مستخدمًا بالفعل.</string>
+    <string name="lists_error_rename">تعذّرت إعادة تسمية القائمة.</string>
+    <string name="lists_error_delete">تعذّر حذف القائمة.</string>
+    <string name="lists_error_move">تعذّر نقل هذا المكان.</string>
+
+    <!-- Settings: language & reminders -->
+    <string name="settings_language">اللغة</string>
+    <string name="language_system">افتراضي النظام</string>
+    <string name="settings_notifications">الإشعارات</string>
+    <string name="trip_reminders_label">تذكيرات الرحلة</string>
+    <string name="trip_reminders_description">مساء اليوم السابق لرحلة محفوظة، وصباح كل يوم منها، مع محطات ذلك اليوم.</string>
+    <string name="trip_reminders_channel_name">تذكيرات الرحلة</string>
+    <string name="reminder_eve_title">رحلتك إلى %1$s تبدأ غدًا</string>
+    <string name="reminder_day_title">اليوم %1$d في %2$s</string>
+    <string name="reminder_empty_day">لا شيء مخطط بعد. اضغط لإضافة محطات.</string>
+</resources>

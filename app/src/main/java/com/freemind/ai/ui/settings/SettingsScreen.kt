@@ -45,9 +45,20 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freemind.ai.R
 import com.freemind.ai.domain.model.ThemeMode
+import android.Manifest
+import android.app.Activity
 import android.content.ClipData
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.freemind.ai.util.AppLanguage
+import com.freemind.ai.util.LocaleHelper
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
@@ -97,6 +108,19 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
             SectionHeader(stringResource(R.string.settings_appearance))
             ThemeModeSelector(selected = uiState.themeMode, onSelect = viewModel::setThemeMode)
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+
+            SectionHeader(stringResource(R.string.settings_language))
+            LanguageSelector(context = context)
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
+
+            SectionHeader(stringResource(R.string.settings_notifications))
+            TripRemindersRow(
+                checked = uiState.tripRemindersEnabled,
+                onCheckedChange = viewModel::setTripRemindersEnabled,
+            )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
@@ -215,6 +239,89 @@ private fun ThemeModeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit
                 )
             }
         }
+    }
+}
+
+/** The app's language: follow the system, or pick one. Applied immediately. */
+@Composable
+private fun LanguageSelector(context: Context) {
+    var selected by remember { mutableStateOf(LocaleHelper.current(context)) }
+    val options = listOf(
+        AppLanguage.SYSTEM to stringResource(R.string.language_system),
+        // Each language is named in itself, so someone who can't read the current one can still find theirs.
+        AppLanguage.ENGLISH to "English",
+        AppLanguage.ARABIC to "العربية",
+        AppLanguage.FRENCH to "Français",
+    )
+    Column(Modifier.selectableGroup()) {
+        options.forEach { (language, label) ->
+            val isSelected = selected == language
+            val choose = {
+                if (!isSelected) {
+                    selected = language
+                    LocaleHelper.set(context, language)
+                    // Android 13+ restarts the activity itself when the app locale changes;
+                    // earlier versions need to be told to re-read the resources.
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) context.findActivity()?.recreate()
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = isSelected, onClick = choose),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = isSelected, onClick = choose)
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+private fun Context.findActivity(): Activity? {
+    var current: Context? = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
+}
+
+/** Trip reminders on/off. Turning it on also asks for the notification permission (Android 13+). */
+@Composable
+private fun TripRemindersRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = stringResource(R.string.trip_reminders_label), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = stringResource(R.string.trip_reminders_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = { enabled ->
+                onCheckedChange(enabled)
+                if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+        )
     }
 }
 

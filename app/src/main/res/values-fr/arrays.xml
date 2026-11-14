@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same order as values/arrays.xml - a stored English phrase is looked up by position. -->
+    <string-array name="verbs_sight">
+        <item>Visiter</item>
+        <item>Explorer</item>
+        <item>Voir</item>
+        <item>Admirer</item>
+        <item>Flâner autour de</item>
+    </string-array>
+    <string-array name="verbs_culture">
+        <item>Parcourir</item>
+        <item>Entrer dans</item>
+        <item>Découvrir</item>
+        <item>Visiter</item>
+    </string-array>
+    <string-array name="verbs_nature">
+        <item>Se promener dans</item>
+        <item>Se détendre à</item>
+        <item>Prendre l\'air à</item>
+        <item>Marcher autour de</item>
+    </string-array>
+    <string-array name="verbs_eat">
+        <item>Déjeuner à</item>
+        <item>Manger à</item>
+        <item>Dîner à</item>
+        <item>Faire le plein d\'énergie à</item>
+        <item>Goûter la cuisine locale à</item>
+    </string-array>
+    <string-array name="verbs_swim">
+        <item>Nager à</item>
+        <item>Se rafraîchir à</item>
+        <item>Se détendre à</item>
+        <item>Passer l\'après-midi à</item>
+    </string-array>
+    <string-array name="verbs_shopping">
+        <item>Faire du shopping à</item>
+        <item>Parcourir</item>
+        <item>Chercher des souvenirs à</item>
+        <item>Flâner dans</item>
+    </string-array>
+    <string-array name="verbs_nightlife">
+        <item>Verres du soir à</item>
+        <item>Finir la soirée à</item>
+        <item>Sortir à</item>
+        <item>Dernier verre à</item>
+    </string-array>
+</resources>

@@ -23,6 +23,7 @@ import okhttp3.Request
 import java.io.IOException
 import java.net.URLEncoder
 import java.security.MessageDigest
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,19 +58,28 @@ class PlacesDataSource @Inject constructor(
         const val BIAS_RADIUS_METRES = 30_000
     }
 
+    /** Asks Google for names and addresses in the app's language, so an Arabic UI doesn't
+     *  show Latin-only place text where Arabic exists. */
+    private fun languageParam(): String = "&language=${Locale.getDefault().language}"
+
     suspend fun searchPlaces(
         query: String,
         placeType: String? = null,
         /** Device position, when known, so results are ranked around the user rather
          *  than around whatever location Google infers from the request IP. */
         bias: DeviceLocation? = null,
+        /** Only places open at this moment - Text Search filters these server-side. */
+        openNowOnly: Boolean = false,
+        biasRadiusMetres: Int = BIAS_RADIUS_METRES,
     ): AppResult<List<PlaceResult>> = withContext(Dispatchers.IO) {
         if (BuildConfig.MAPS_API_KEY.isBlank()) return@withContext AppResult.Failure(AppError.NotConfigured)
 
         val url = "https://maps.googleapis.com/maps/api/place/textsearch/json" +
             "?query=${URLEncoder.encode(query, "UTF-8")}" +
             (placeType?.let { "&type=$it" } ?: "") +
-            (bias?.let { "&location=${it.latitude},${it.longitude}&radius=$BIAS_RADIUS_METRES" } ?: "") +
+            (bias?.let { "&location=${it.latitude},${it.longitude}&radius=$biasRadiusMetres" } ?: "") +
+            (if (openNowOnly) "&opennow=true" else "") +
+            languageParam() +
             "&key=${BuildConfig.MAPS_API_KEY}"
 
         val request = Request.Builder()
@@ -134,6 +144,7 @@ class PlacesDataSource @Inject constructor(
         val url = "https://maps.googleapis.com/maps/api/place/details/json" +
             "?place_id=${URLEncoder.encode(placeId, "UTF-8")}" +
             "&fields=formatted_phone_number,international_phone_number,website,opening_hours,url" +
+            languageParam() +
             "&key=${BuildConfig.MAPS_API_KEY}"
         val body = try {
             httpClient.newCall(authorized(url)).execute().use { response ->

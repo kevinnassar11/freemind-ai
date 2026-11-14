@@ -1,18 +1,23 @@
 package com.freemind.ai.data.repository
 
+import android.graphics.Bitmap
 import android.util.Log
+import android.util.LruCache
 import com.freemind.ai.data.local.CachedPlaceSearchEntity
 import com.freemind.ai.data.local.PendingFavoriteAction
 import com.freemind.ai.data.local.PendingFavoriteQueue
 import com.freemind.ai.data.local.PlaceSearchCacheDao
+import com.freemind.ai.data.local.SavedItineraryDao
+import com.freemind.ai.data.local.SavedItineraryEntity
 import com.freemind.ai.data.remote.places.PlacesDataSource
-import com.freemind.ai.data.remote.supabase.ItineraryEdgeFunctionClient
 import com.freemind.ai.data.remote.supabase.NewFavoritePlaceDto
 import com.freemind.ai.data.remote.supabase.NewPlaceSearchHistoryDto
 import com.freemind.ai.data.remote.supabase.PlacesSupabaseDataSource
 import com.freemind.ai.data.remote.supabase.toDomain
 import com.freemind.ai.domain.model.DeviceLocation
 import com.freemind.ai.domain.model.FavoritePlace
+import com.freemind.ai.domain.model.Itinerary
+import com.freemind.ai.domain.model.PlaceDetails
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.PlaceSearchHistoryEntry
 import com.freemind.ai.domain.model.PlaceSearchMode
@@ -25,9 +30,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val PHOTO_CACHE_ENTRIES = 24
 private const val TAG = "FreeMindPlaces"
 private const val CACHE_TTL_MS = 24L * 60 * 60 * 1000
 
@@ -37,7 +44,7 @@ class PlacesRepositoryImpl @Inject constructor(
     private val placesSupabaseDataSource: PlacesSupabaseDataSource,
     private val pendingFavoriteQueue: PendingFavoriteQueue,
     private val placeSearchCacheDao: PlaceSearchCacheDao,
-    private val itineraryEdgeFunctionClient: ItineraryEdgeFunctionClient,
+    private val savedItineraryDao: SavedItineraryDao,
     private val itineraryComposer: ItineraryComposer,
 ) : PlacesRepository {
 
@@ -94,21 +101,48 @@ class PlacesRepositoryImpl @Inject constructor(
         return "${mode.name}|${query.trim().lowercase()}$area"
     }
 
-    /**
-     * `generate-itinerary` isn't deployed (no Anthropic API key - see that function's
-     * header comment), so this falls back to composing a real itinerary from live
-     * Places results ([ItineraryComposer]) whenever the Edge Function call doesn't
-     * succeed. The moment that key is added and the function is deployed, this starts
-     * returning genuine Claude-generated text with no code change needed here - though
-     * only the local composer populates [ItineraryResult.places]/[ItineraryResult.destination],
-     * since the Edge Function returns free text with no structured place data.
-     */
-    override suspend fun generateItinerary(prompt: String): AppResult<ItineraryResult> {
-        val edgeResult = itineraryEdgeFunctionClient.generateItinerary(prompt)
-        if (edgeResult is AppResult.Success) {
-            return AppResult.Success(ItineraryResult(text = edgeResult.data, places = emptyList(), destination = null))
+    override suspend fun generateItinerary(prompt: String): AppResult<Itinerary> =
+        itineraryComposer.compose(prompt)
+
+    override suspend fun getPlaceDetails(placeId: String): AppResult<PlaceDetails> =
+        placesDataSource.getPlaceDetails(placeId)
+
+    // A details sheet re-requests its photo every time it opens; a small in-memory LRU
+    // keeps reopening the same place instant without needing a disk cache.
+    private val photoCache = object : LruCache<String, Bitmap>(PHOTO_CACHE_ENTRIES) {}
+
+    override suspend fun getPlacePhoto(photoReference: String): Bitmap? =
+        photoCache.get(photoReference)
+            ?: placesDataSource.fetchPhoto(photoReference)?.also { photoCache.put(photoReference, it) }
+
+    override fun observeSavedItineraries(userId: String): Flow<List<SavedItinerarySummary>> =
+        savedItineraryDao.observeAll(userId).map { rows ->
+            rows.map { SavedItinerarySummary(it.id, it.destination, it.dayCount, it.savedAt) }
         }
-        return itineraryComposer.compose(prompt)
+
+    override suspend fun saveItinerary(userId: String, itinerary: Itinerary): String {
+        // One saved row per (user, prompt): saving the same plan twice updates it.
+        val id = UUID.nameUUIDFromBytes("$userId|${itinerary.prompt.trim().lowercase()}".toByteArray()).toString()
+        savedItineraryDao.upsert(
+            SavedItineraryEntity(
+                id = id,
+                userId = userId,
+                destination = itinerary.destinationName,
+                dayCount = itinerary.days.size,
+                planJson = json.encodeToString(itinerary),
+                savedAt = System.currentTimeMillis(),
+            ),
+        )
+        return id
+    }
+
+    override suspend fun getSavedItinerary(userId: String, id: String): Itinerary? =
+        savedItineraryDao.get(id, userId)?.let { row ->
+            runCatching { json.decodeFromString<Itinerary>(row.planJson) }.getOrNull()
+        }
+
+    override suspend fun deleteSavedItinerary(userId: String, id: String) {
+        savedItineraryDao.delete(id, userId)
     }
 
     /**

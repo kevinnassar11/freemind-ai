@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.freemind.ai.data.repository.AuthRepository
 import com.freemind.ai.data.repository.FavoriteWriteResult
 import com.freemind.ai.data.repository.PlacesRepository
+import com.freemind.ai.data.repository.SavedItinerarySummary
 import com.freemind.ai.domain.model.FavoritePlace
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,8 @@ import javax.inject.Inject
 
 data class FavoritesUiState(
     val favorites: List<FavoritePlace> = emptyList(),
+    /** Trip plans saved on this device (from Prompt mode), newest first. */
+    val plans: List<SavedItinerarySummary> = emptyList(),
     val isLoading: Boolean = true,
     val isError: Boolean = false,
 )
@@ -27,6 +30,22 @@ class FavoritesViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
+
+    init {
+        val userId = authRepository.userId
+        if (userId != null) {
+            viewModelScope.launch {
+                placesRepository.observeSavedItineraries(userId).collect { plans ->
+                    _uiState.value = _uiState.value.copy(plans = plans)
+                }
+            }
+        }
+    }
+
+    fun deletePlan(plan: SavedItinerarySummary) {
+        val userId = authRepository.userId ?: return
+        viewModelScope.launch { placesRepository.deleteSavedItinerary(userId, plan.id) }
+    }
 
     fun refresh() {
         val userId = authRepository.userId ?: return

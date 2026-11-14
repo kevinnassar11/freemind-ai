@@ -30,6 +30,8 @@ sealed interface Destination {
         val focusLongitude: Double? = null,
         val runQuery: String? = null,
         val runMode: String? = null,
+        /** Set when arriving from Favorites > Plans - reopens that saved trip plan. */
+        val runPlanId: String? = null,
     ) : Destination
 
     @Serializable data object History : Destination

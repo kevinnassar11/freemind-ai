@@ -98,4 +98,47 @@
     <string name="error_maps_not_configured">Maps isn\'t configured yet. Add MAPS_API_KEY to local.properties — see SETUP.md.</string>
     <string name="error_maps_denied">Maps rejected the request. Check the API key restrictions and that Places API is enabled.</string>
     <string name="showing_cached_results">Showing saved results — you\'re offline.</string>
+
+    <!-- Trip plans -->
+    <string name="plan_title">%1$d-day plan for %2$s</string>
+    <string name="plan_all_days">All days</string>
+    <string name="plan_day_chip">Day %1$d</string>
+    <string name="plan_day_header">Day %1$d</string>
+    <string name="plan_save">Save plan</string>
+    <string name="plan_unsave">Remove saved plan</string>
+    <string name="plan_share">Share plan</string>
+    <string name="plan_share_chooser">Share your trip plan</string>
+    <string name="plan_saved_toast">Plan saved to Favorites › Plans</string>
+    <string name="slot_morning">Morning</string>
+    <string name="slot_midday">Midday</string>
+    <string name="slot_afternoon">Afternoon</string>
+    <string name="slot_evening">Evening</string>
+    <string name="stop_details">Details</string>
+
+    <!-- Filters -->
+    <string name="filter_open_now">Open now</string>
+    <string name="filter_rating_4">4.0★+</string>
+    <string name="filter_price_2">Up to $$</string>
+    <string name="filter_clear">Clear filters</string>
+    <string name="maps_no_filter_matches">No results match your filters.</string>
+    <string name="maps_filtered_count">%1$d of %2$d shown</string>
+    <string name="place_open_now">Open now</string>
+    <string name="place_closed_now">Closed now</string>
+
+    <!-- Place details -->
+    <string name="details_hours">Opening hours</string>
+    <string name="details_call">Call</string>
+    <string name="details_website">Website</string>
+    <string name="details_share">Share</string>
+    <string name="details_loading">Loading details…</string>
+    <string name="details_unavailable">More details aren\'t available right now.</string>
+    <string name="details_close">Close</string>
+    <string name="details_photo_description">Photo of %1$s</string>
+
+    <!-- Saved plans (Favorites tab) -->
+    <string name="favorites_tab_places">Places</string>
+    <string name="favorites_tab_plans">Plans</string>
+    <string name="plans_empty">Trip plans you save will show up here. Ask for one in Prompt mode — e.g. “5 days in Istanbul, I love eating and sights”.</string>
+    <string name="plans_row_subtitle">%1$d-day plan • %2$s</string>
+    <string name="plan_delete">Delete plan</string>
 </resources>

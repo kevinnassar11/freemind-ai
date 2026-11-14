@@ -3,9 +3,12 @@ package com.freemind.ai.data.remote.places
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.Signature
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import com.freemind.ai.BuildConfig
 import com.freemind.ai.domain.model.DeviceLocation
+import com.freemind.ai.domain.model.PlaceDetails
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.util.AppError
 import com.freemind.ai.util.AppResult
@@ -115,10 +118,79 @@ class PlacesDataSource @Inject constructor(
                     latitude = place.geometry?.location?.lat,
                     longitude = place.geometry?.location?.lng,
                     types = place.types,
+                    rating = place.rating,
+                    ratingCount = place.userRatingsTotal,
+                    openNow = place.openingHours?.openNow,
+                    priceLevel = place.priceLevel,
+                    photoReference = place.photos.firstOrNull()?.photoReference,
                 )
             },
         )
     }
+
+    /** Phone, website and weekly hours - not returned by text search, so fetched on demand. */
+    suspend fun getPlaceDetails(placeId: String): AppResult<PlaceDetails> = withContext(Dispatchers.IO) {
+        if (BuildConfig.MAPS_API_KEY.isBlank()) return@withContext AppResult.Failure(AppError.NotConfigured)
+        val url = "https://maps.googleapis.com/maps/api/place/details/json" +
+            "?place_id=${URLEncoder.encode(placeId, "UTF-8")}" +
+            "&fields=formatted_phone_number,international_phone_number,website,opening_hours,url" +
+            "&key=${BuildConfig.MAPS_API_KEY}"
+        val body = try {
+            httpClient.newCall(authorized(url)).execute().use { response ->
+                if (!response.isSuccessful) {
+                    return@withContext AppResult.Failure(AppError.Unknown("Place details failed (${response.code})."))
+                }
+                response.body.string()
+            }
+        } catch (io: IOException) {
+            return@withContext AppResult.Failure(AppError.Network)
+        }
+        val parsed = try {
+            json.decodeFromString<PlaceDetailsResponse>(body)
+        } catch (e: Exception) {
+            return@withContext AppResult.Failure(AppError.Unknown("Couldn't read the place details."))
+        }
+        when (parsed.status) {
+            "OK" -> Unit
+            "OVER_QUERY_LIMIT" -> return@withContext AppResult.Failure(AppError.RateLimited)
+            "REQUEST_DENIED" -> return@withContext AppResult.Failure(AppError.Unauthorized)
+            else -> return@withContext AppResult.Failure(
+                AppError.Unknown(parsed.errorMessage ?: "Place details failed (${parsed.status})."),
+            )
+        }
+        val result = parsed.result
+        AppResult.Success(
+            PlaceDetails(
+                phone = result?.formattedPhoneNumber,
+                dialNumber = result?.internationalPhoneNumber ?: result?.formattedPhoneNumber,
+                website = result?.website,
+                mapsUrl = result?.url,
+                weekdayHours = result?.openingHours?.weekdayText.orEmpty(),
+            ),
+        )
+    }
+
+    /** A place photo scaled to about [maxWidthPx] wide, or null if it can't be loaded. */
+    suspend fun fetchPhoto(photoReference: String, maxWidthPx: Int = 800): Bitmap? = withContext(Dispatchers.IO) {
+        if (BuildConfig.MAPS_API_KEY.isBlank()) return@withContext null
+        val url = "https://maps.googleapis.com/maps/api/place/photo" +
+            "?maxwidth=$maxWidthPx&photo_reference=${URLEncoder.encode(photoReference, "UTF-8")}" +
+            "&key=${BuildConfig.MAPS_API_KEY}"
+        try {
+            httpClient.newCall(authorized(url)).execute().use { response ->
+                if (!response.isSuccessful) return@withContext null
+                BitmapFactory.decodeStream(response.body.byteStream())
+            }
+        } catch (io: IOException) {
+            null
+        }
+    }
+
+    private fun authorized(url: String): Request = Request.Builder()
+        .url(url)
+        .header("X-Android-Package", context.packageName)
+        .header("X-Android-Cert", androidCertSha1)
+        .build()
 }
 
 /** Uppercase, colon-free hex SHA-1 of the APK's signing certificate - the format Google expects in X-Android-Cert. */
@@ -161,6 +233,36 @@ private data class PlaceDto(
     val vicinity: String? = null,
     val types: List<String> = emptyList(),
     val geometry: GeometryDto? = null,
+    val rating: Double? = null,
+    @SerialName("user_ratings_total") val userRatingsTotal: Int? = null,
+    @SerialName("price_level") val priceLevel: Int? = null,
+    @SerialName("opening_hours") val openingHours: OpeningHoursDto? = null,
+    val photos: List<PhotoDto> = emptyList(),
+)
+
+@Serializable
+private data class OpeningHoursDto(
+    @SerialName("open_now") val openNow: Boolean? = null,
+    @SerialName("weekday_text") val weekdayText: List<String> = emptyList(),
+)
+
+@Serializable
+private data class PhotoDto(@SerialName("photo_reference") val photoReference: String)
+
+@Serializable
+private data class PlaceDetailsResponse(
+    val result: PlaceDetailsDto? = null,
+    val status: String = "UNKNOWN_ERROR",
+    @SerialName("error_message") val errorMessage: String? = null,
+)
+
+@Serializable
+private data class PlaceDetailsDto(
+    @SerialName("formatted_phone_number") val formattedPhoneNumber: String? = null,
+    @SerialName("international_phone_number") val internationalPhoneNumber: String? = null,
+    val website: String? = null,
+    val url: String? = null,
+    @SerialName("opening_hours") val openingHours: OpeningHoursDto? = null,
 )
 
 /**

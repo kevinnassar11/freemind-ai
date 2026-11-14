@@ -1,5 +1,6 @@
 package com.freemind.ai.ui.maps
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.freemind.ai.data.repository.AuthRepository
@@ -8,6 +9,9 @@ import com.freemind.ai.data.repository.PlacesRepository
 import com.freemind.ai.data.location.DeviceLocationProvider
 import com.freemind.ai.data.repository.SettingsRepository
 import com.freemind.ai.domain.model.DeviceLocation
+import com.freemind.ai.domain.model.Itinerary
+import com.freemind.ai.domain.model.PlaceDetails
+import com.freemind.ai.domain.model.PlaceFilters
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.PlaceSearchMode
 import com.freemind.ai.domain.model.TrendingSearch
@@ -35,7 +39,8 @@ private const val MIN_AUTOCOMPLETE_CHARS = 2
  *  explicit length of stay; ItineraryComposer defaults the day count when one isn't
  *  named. Requiring a duration here rejected exactly the prompts this feature is for. */
 private val TRAVEL_INTENT_REGEX = Regex(
-    """\b(travel(?:l?ing)?|trip|vacation|holiday|visiting|itinerary|plan(?:ning)?)\b""",
+    """\b(travel(?:l?ing)?|trip|vacation|holiday|visiting|itinerary|plan(?:ning)?|""" +
+        """(?:\d+|an?|one|two|three|four|five|six|seven|eight|nine|ten)[\s-]*(?:days?|nights?|weeks?)|weekend)\b""",
     RegexOption.IGNORE_CASE,
 )
 private fun isItineraryPrompt(text: String): Boolean = TRAVEL_INTENT_REGEX.containsMatchIn(text)
@@ -57,9 +62,22 @@ data class MapsUiState(
     val hasSearched: Boolean = false,
     /** True when `results` came from the offline cache rather than a live call. */
     val isShowingCachedResults: Boolean = false,
+    /** Every result of the last search before [filters] were applied, so toggling a
+     *  filter re-slices these instead of costing another Places call. */
+    val unfilteredResults: List<PlaceResult> = emptyList(),
+    val filters: PlaceFilters = PlaceFilters(),
     /** A generated day-by-day trip plan, set instead of `results` when the Prompt
      *  query reads as trip planning rather than a place lookup. */
-    val itinerary: String? = null,
+    val itinerary: Itinerary? = null,
+    /** Which day of [itinerary] the map is zoomed to; null shows the whole trip. */
+    val selectedDay: Int? = null,
+    /** Set once the current plan has been saved on the device (or was opened from there). */
+    val savedItineraryId: String? = null,
+    /** The place whose details sheet is open, if any. */
+    val detailsPlace: PlaceResult? = null,
+    val details: PlaceDetails? = null,
+    val detailsPhoto: Bitmap? = null,
+    val isLoadingDetails: Boolean = false,
     val error: AppError? = null,
 )
 
@@ -151,8 +169,12 @@ class MapsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             mode = mode,
             results = emptyList(),
+            unfilteredResults = emptyList(),
             selected = null,
             hasSearched = false,
+            itinerary = null,
+            selectedDay = null,
+            savedItineraryId = null,
             error = null,
         )
         if (mode != PlaceSearchMode.PROMPT && _uiState.value.query.isNotBlank()) {
@@ -188,7 +210,13 @@ class MapsViewModel @Inject constructor(
             return
         }
 
-        _uiState.value = _uiState.value.copy(isSearching = true, error = null, itinerary = null)
+        _uiState.value = _uiState.value.copy(
+            isSearching = true,
+            error = null,
+            itinerary = null,
+            selectedDay = null,
+            savedItineraryId = null,
+        )
 
         // Re-read position for this search rather than reusing the start-up fix: the
         // user may have granted permission, or simply moved, since the screen opened.
@@ -206,9 +234,11 @@ class MapsViewModel @Inject constructor(
         // each one is - not to re-sort them into nearest-first.
         when (val result = placesRepository.searchPlaces(query, _uiState.value.mode, bias)) {
             is AppResult.Success -> {
+                val visible = _uiState.value.filters.apply(result.data.results)
                 _uiState.value = _uiState.value.copy(
-                    results = result.data.results,
-                    selected = result.data.results.firstOrNull(),
+                    unfilteredResults = result.data.results,
+                    results = visible,
+                    selected = visible.firstOrNull(),
                     isSearching = false,
                     hasSearched = true,
                     isShowingCachedResults = result.data.isFromCache,
@@ -240,26 +270,156 @@ class MapsViewModel @Inject constructor(
             isSearching = true,
             error = null,
             itinerary = null,
+            selectedDay = null,
+            savedItineraryId = null,
             results = emptyList(),
+            unfilteredResults = emptyList(),
             selected = null,
         )
         when (val result = placesRepository.generateItinerary(prompt)) {
-            is AppResult.Success -> _uiState.value = _uiState.value.copy(
-                isSearching = false,
-                hasSearched = true,
-                itinerary = result.data.text,
-                // Marked in red by the same Marker loop that draws normal search
-                // results; `selected` reuses the existing camera-recenter effect so
-                // the map opens on the destination without any separate code path.
-                results = result.data.places,
-                selected = result.data.destination,
-            )
+            is AppResult.Success -> {
+                val plan = result.data
+                _uiState.value = _uiState.value.copy(
+                    isSearching = false,
+                    hasSearched = true,
+                    itinerary = plan,
+                    // Marked by the same Marker loop that draws normal search results;
+                    // `selected` reuses the existing camera-recenter effect so the map
+                    // opens on the destination without any separate code path.
+                    results = plan.places,
+                    unfilteredResults = plan.places,
+                    selected = plan.destination ?: plan.places.firstOrNull(),
+                )
+                // Plans show up in History like any other search, so they can be re-opened.
+                if (settingsRepository.historyEnabled.first()) {
+                    authRepository.userId?.let { userId ->
+                        placesRepository.recordSearch(userId, prompt, PlaceSearchMode.PROMPT, plan.destination)
+                    }
+                }
+            }
             is AppResult.Failure -> _uiState.value = _uiState.value.copy(
                 isSearching = false,
                 hasSearched = true,
                 error = result.error,
             )
         }
+    }
+
+    // ---- Filters ---------------------------------------------------------------
+
+    fun toggleOpenNow() = updateFilters { it.copy(openNow = !it.openNow) }
+
+    /** Toggles a minimum star rating; picking the active one clears it. */
+    fun toggleMinRating(rating: Double) =
+        updateFilters { it.copy(minRating = if (it.minRating == rating) null else rating) }
+
+    /** Toggles an upper price bound (1 = $ ... 4 = $$$$); picking the active one clears it. */
+    fun toggleMaxPrice(level: Int) =
+        updateFilters { it.copy(maxPriceLevel = if (it.maxPriceLevel == level) null else level) }
+
+    fun clearFilters() = updateFilters { PlaceFilters() }
+
+    private fun updateFilters(change: (PlaceFilters) -> PlaceFilters) {
+        val state = _uiState.value
+        val filters = change(state.filters)
+        // Trip plans are not filterable - their places are the plan.
+        if (state.itinerary != null) {
+            _uiState.value = state.copy(filters = filters)
+            return
+        }
+        val visible = filters.apply(state.unfilteredResults)
+        _uiState.value = state.copy(
+            filters = filters,
+            results = visible,
+            selected = state.selected?.takeIf { sel -> visible.any { it.id == sel.id } } ?: visible.firstOrNull(),
+        )
+    }
+
+    // ---- Trip plans ------------------------------------------------------------
+
+    /** Zooms the map to one day of the plan; null returns to the whole trip. */
+    fun selectDay(day: Int?) {
+        _uiState.value = _uiState.value.copy(selectedDay = day)
+    }
+
+    /** Saves the open plan on this device, or removes it if it was already saved. */
+    fun toggleSavePlan() {
+        val plan = _uiState.value.itinerary ?: return
+        val userId = authRepository.userId ?: return
+        val savedId = _uiState.value.savedItineraryId
+        viewModelScope.launch {
+            if (savedId == null) {
+                val id = placesRepository.saveItinerary(userId, plan)
+                _uiState.value = _uiState.value.copy(savedItineraryId = id)
+            } else {
+                placesRepository.deleteSavedItinerary(userId, savedId)
+                _uiState.value = _uiState.value.copy(savedItineraryId = null)
+            }
+        }
+    }
+
+    /** Opens a plan kept from earlier - works offline, no search is run. */
+    fun openSavedPlan(id: String) {
+        val userId = authRepository.userId ?: return
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            val plan = placesRepository.getSavedItinerary(userId, id)
+            if (plan == null) {
+                _uiState.value = _uiState.value.copy(
+                    hasSearched = true,
+                    error = AppError.Unknown("That saved plan could not be opened."),
+                )
+                return@launch
+            }
+            _uiState.value = _uiState.value.copy(
+                query = "",
+                mode = PlaceSearchMode.PROMPT,
+                itinerary = plan,
+                selectedDay = null,
+                savedItineraryId = id,
+                results = plan.places,
+                unfilteredResults = plan.places,
+                selected = plan.destination ?: plan.places.firstOrNull(),
+                hasSearched = true,
+                isSearching = false,
+                isShowingCachedResults = false,
+                error = null,
+            )
+        }
+    }
+
+    // ---- Place details ---------------------------------------------------------
+
+    fun openDetails(place: PlaceResult) {
+        _uiState.value = _uiState.value.copy(
+            detailsPlace = place,
+            details = null,
+            detailsPhoto = null,
+            isLoadingDetails = true,
+        )
+        viewModelScope.launch {
+            val details = (placesRepository.getPlaceDetails(place.id) as? AppResult.Success)?.data
+            if (_uiState.value.detailsPlace?.id == place.id) {
+                _uiState.value = _uiState.value.copy(details = details, isLoadingDetails = false)
+            }
+        }
+        place.photoReference?.let { ref ->
+            viewModelScope.launch {
+                val photo = placesRepository.getPlacePhoto(ref)
+                if (_uiState.value.detailsPlace?.id == place.id) {
+                    _uiState.value = _uiState.value.copy(detailsPhoto = photo)
+                }
+            }
+        }
+    }
+
+    fun closeDetails() {
+        _uiState.value = _uiState.value.copy(
+            detailsPlace = null,
+            details = null,
+            detailsPhoto = null,
+            isLoadingDetails = false,
+        )
     }
 
     fun selectPlace(place: PlaceResult) {
@@ -278,11 +438,14 @@ class MapsViewModel @Inject constructor(
             query = "",
             mode = PlaceSearchMode.PROMPT,
             results = listOf(place),
+            unfilteredResults = listOf(place),
             selected = place,
             hasSearched = true,
             isSearching = false,
             isShowingCachedResults = false,
             itinerary = null,
+            selectedDay = null,
+            savedItineraryId = null,
             error = null,
         )
     }
@@ -326,6 +489,7 @@ class MapsViewModel @Inject constructor(
         // it back to Prompt here ran their next search in a mode they hadn't picked.
         _uiState.value = MapsUiState(
             mode = _uiState.value.mode,
+            filters = _uiState.value.filters,
             favoritePlaceIds = _uiState.value.favoritePlaceIds,
             pendingFavoritePlaceIds = _uiState.value.pendingFavoritePlaceIds,
             trendingSearches = _uiState.value.trendingSearches,

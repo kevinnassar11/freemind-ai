@@ -1,7 +1,10 @@
 package com.freemind.ai.data.repository
 
 import com.freemind.ai.domain.model.DeviceLocation
+import android.graphics.Bitmap
 import com.freemind.ai.domain.model.FavoritePlace
+import com.freemind.ai.domain.model.Itinerary
+import com.freemind.ai.domain.model.PlaceDetails
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.PlaceSearchHistoryEntry
 import com.freemind.ai.domain.model.PlaceSearchMode
@@ -21,12 +24,8 @@ sealed interface FavoriteWriteResult {
 /** A search's results, plus whether they came from the offline cache rather than a live call. */
 data class PlaceSearchResult(val results: List<PlaceResult>, val isFromCache: Boolean)
 
-/** A generated itinerary: the paragraph text, the real places it references (so the
- *  map can mark them), and the destination itself (so the map can recenter there).
- *  [places] and [destination] are empty/null when the text came from the
- *  `generate-itinerary` Edge Function, which returns free text with no structured
- *  place data - only the local [ItineraryComposer] fallback populates them. */
-data class ItineraryResult(val text: String, val places: List<PlaceResult>, val destination: PlaceResult?)
+/** One row in the saved-plans list. */
+data class SavedItinerarySummary(val id: String, val destination: String, val dayCount: Int, val savedAt: Long)
 
 interface PlacesRepository {
     /** [bias] is the device's position when it's known and permitted; null falls back
@@ -37,8 +36,20 @@ interface PlacesRepository {
         bias: DeviceLocation? = null,
     ): AppResult<PlaceSearchResult>
 
-    /** Turns a free-form trip-planning prompt into a single paragraph day-by-day itinerary. */
-    suspend fun generateItinerary(prompt: String): AppResult<ItineraryResult>
+    /** Turns a free-form trip-planning prompt into a day-by-day plan built from real places. */
+    suspend fun generateItinerary(prompt: String): AppResult<Itinerary>
+
+    /** Phone, website and hours for one place - fetched on demand. */
+    suspend fun getPlaceDetails(placeId: String): AppResult<PlaceDetails>
+
+    /** A place photo, or null when unavailable. */
+    suspend fun getPlacePhoto(photoReference: String): Bitmap?
+
+    /** Plans the user chose to keep, newest first. */
+    fun observeSavedItineraries(userId: String): Flow<List<SavedItinerarySummary>>
+    suspend fun saveItinerary(userId: String, itinerary: Itinerary): String
+    suspend fun getSavedItinerary(userId: String, id: String): Itinerary?
+    suspend fun deleteSavedItinerary(userId: String, id: String)
 
     suspend fun recordSearch(userId: String, query: String, mode: PlaceSearchMode, topResult: PlaceResult?)
     suspend fun getSearchHistory(userId: String): Result<List<PlaceSearchHistoryEntry>>

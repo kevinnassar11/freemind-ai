@@ -142,6 +142,7 @@ fun FreeMindNavHost(
                         focusLongitude = args.focusLongitude,
                         runQuery = args.runQuery,
                         runMode = args.runMode,
+                        runPlanId = args.runPlanId,
                     )
                 }
                 composable<Destination.History> {
@@ -174,6 +175,12 @@ fun FreeMindNavHost(
                                     focusLongitude = favorite.longitude,
                                 ),
                             ) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenPlan = { planId ->
+                            navController.navigate(Destination.Maps(runPlanId = planId)) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                             }

@@ -23,9 +23,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,6 +61,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,15 +70,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -88,15 +93,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.freemind.ai.R
 import com.freemind.ai.domain.model.DeviceLocation
+import com.freemind.ai.domain.model.PlaceFilters
 import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.PlaceSearchMode
 import com.freemind.ai.domain.model.TrendingSearch
 import com.freemind.ai.domain.model.distanceMetresTo
 import com.freemind.ai.ui.components.ErrorBanner
 import com.freemind.ai.util.AppError
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -104,11 +112,15 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 private val DEFAULT_LOCATION = LatLng(37.7749, -122.4194)
 private const val DEFAULT_ZOOM = 11f
 private const val RESULT_ZOOM = 14f
+
+/** Space the mode chips and search bar take from the top of the map while a plan is open. */
+private val PLAN_TOP_CHROME_HEIGHT = 200.dp
 
 @Composable
 fun MapsScreen(
@@ -121,6 +133,8 @@ fun MapsScreen(
      *  original mode, the way tapping the entry should always have worked. */
     runQuery: String? = null,
     runMode: String? = null,
+    /** Set when arriving from Favorites > Plans - opens that saved trip plan offline. */
+    runPlanId: String? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -143,6 +157,9 @@ fun MapsScreen(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM)
     }
+    // Height of the trip-plan sheet as laid out, so the map can keep its framing clear of it.
+    var planSheetHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
 
     // Arrived via a push-notification deep link (see FreeMindFcmService) - select
     // it the same way tapping a search result would, so the existing camera-move
@@ -171,6 +188,11 @@ fun MapsScreen(
         viewModel.search()
     }
 
+    // Arrived from a saved plan in Favorites - reopen it from the device, no search.
+    LaunchedEffect(runPlanId) {
+        if (runPlanId != null) viewModel.openSavedPlan(runPlanId)
+    }
+
     // Recentre the map whenever the selected place changes (search result tapped,
     // or the first hit auto-selected after a search).
     LaunchedEffect(uiState.selected) {
@@ -178,6 +200,36 @@ fun MapsScreen(
         val lat = place.latitude ?: return@LaunchedEffect
         val lng = place.longitude ?: return@LaunchedEffect
         cameraPositionState.position = CameraPosition.fromLatLngZoom(LatLng(lat, lng), RESULT_ZOOM)
+    }
+
+    // Frame the whole trip - or just the chosen day - whenever the plan, the day
+    // picker or the sheet's height changes. The map fills the screen under the search
+    // bar and the plan sheet, so it is given content padding for both (see GoogleMap
+    // below) and the bounds are fitted into what is actually visible. Declared after
+    // the effect above so, on first show, this wins over the plain recentre.
+    LaunchedEffect(uiState.itinerary, uiState.selectedDay, planSheetHeightPx) {
+        val plan = uiState.itinerary ?: return@LaunchedEffect
+        // Wait for the sheet to be measured, or the first fit would ignore it.
+        if (planSheetHeightPx == 0) return@LaunchedEffect
+        val points = plan.days
+            .filter { uiState.selectedDay == null || it.day == uiState.selectedDay }
+            .flatMap { it.stops }
+            .mapNotNull { stop ->
+                val lat = stop.place.latitude
+                val lng = stop.place.longitude
+                if (lat != null && lng != null) LatLng(lat, lng) else null
+            }
+        if (points.isEmpty()) return@LaunchedEffect
+        try {
+            if (points.size == 1) {
+                cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(points.first(), RESULT_ZOOM), 600)
+            } else {
+                val bounds = LatLngBounds.builder().apply { points.forEach { include(it) } }.build()
+                cameraPositionState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 100), 600)
+            }
+        } catch (_: IllegalStateException) {
+            // Map not laid out yet - the destination recentre above already applies.
+        }
     }
 
     // A permanently-failed favorite write (not a queued offline one) surfaces
@@ -216,8 +268,43 @@ fun MapsScreen(
             cameraPositionState = cameraPositionState,
             properties = mapProperties,
             uiSettings = MapUiSettings(myLocationButtonEnabled = uiState.hasLocationPermission),
+            // Only while a plan is open: keep the framing (and Google's logo / zoom
+            // buttons) clear of the mode chips + search bar and of the plan sheet.
+            contentPadding = if (uiState.itinerary != null && planSheetHeightPx > 0) {
+                PaddingValues(
+                    top = PLAN_TOP_CHROME_HEIGHT,
+                    bottom = with(density) { planSheetHeightPx.toDp() },
+                )
+            } else {
+                PaddingValues()
+            },
         ) {
-            uiState.results.forEach { place ->
+            val plan = uiState.itinerary
+            if (plan != null) {
+                // Trip plan: each stop is a pin coloured by its day, so the colour in the
+                // list matches the colour on the map.
+                plan.days
+                    .filter { uiState.selectedDay == null || it.day == uiState.selectedDay }
+                    .forEach { day ->
+                        day.stops.forEach { stop ->
+                            val lat = stop.place.latitude
+                            val lng = stop.place.longitude
+                            if (lat != null && lng != null) {
+                                key("plan-${day.day}-${stop.place.id}") {
+                                    val markerAlpha = remember { Animatable(0f) }
+                                    LaunchedEffect(Unit) { markerAlpha.animateTo(1f, tween(450)) }
+                                    Marker(
+                                        state = MarkerState(position = LatLng(lat, lng)),
+                                        title = stop.place.title,
+                                        snippet = stringResource(R.string.plan_day_header, day.day),
+                                        icon = BitmapDescriptorFactory.defaultMarker(dayHue(day.day)),
+                                        alpha = markerAlpha.value,
+                                    )
+                                }
+                            }
+                        }
+                    }
+            } else uiState.results.forEach { place ->
                 val lat = place.latitude
                 val lng = place.longitude
                 if (lat != null && lng != null) {
@@ -303,6 +390,21 @@ fun MapsScreen(
             )
 
             AnimatedVisibility(
+                visible = uiState.itinerary == null && uiState.unfilteredResults.isNotEmpty(),
+                enter = fadeIn(tween(280)) + expandVertically(tween(280)),
+                exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
+            ) {
+                FilterRow(
+                    filters = uiState.filters,
+                    onOpenNow = viewModel::toggleOpenNow,
+                    onRating = { viewModel.toggleMinRating(4.0) },
+                    onPrice = { viewModel.toggleMaxPrice(2) },
+                    onClear = viewModel::clearFilters,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+                )
+            }
+
+            AnimatedVisibility(
                 visible = uiState.error != null,
                 enter = fadeIn(tween(280)) + expandVertically(tween(280)),
                 exit = fadeOut(tween(180)) + shrinkVertically(tween(180)),
@@ -350,6 +452,9 @@ fun MapsScreen(
         }
 
         val itinerary = uiState.itinerary
+        val scope = rememberCoroutineScope()
+        val planSavedMessage = stringResource(R.string.plan_saved_toast)
+        val planShareChooser = stringResource(R.string.plan_share_chooser)
         val bottomSheetEnter = fadeIn(tween(320)) + slideInVertically(tween(320)) { it / 4 }
         val bottomSheetExit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { it / 4 }
 
@@ -360,9 +465,21 @@ fun MapsScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             if (itinerary != null) {
-                ItineraryCard(
-                    text = itinerary,
+                ItinerarySheet(
+                    plan = itinerary,
+                    selectedDay = uiState.selectedDay,
+                    isSaved = uiState.savedItineraryId != null,
+                    onSelectDay = viewModel::selectDay,
+                    onSave = {
+                        val wasSaved = uiState.savedItineraryId != null
+                        viewModel.toggleSavePlan()
+                        if (!wasSaved) scope.launch { snackbarHostState.showSnackbar(planSavedMessage) }
+                    },
+                    onShare = { context.shareText(itinerary.toShareText(), planShareChooser) },
+                    onStopClick = viewModel::selectPlace,
+                    onStopDetails = viewModel::openDetails,
                     modifier = Modifier
+                        .onSizeChanged { planSheetHeightPx = it.height }
                         .fillMaxWidth()
                         .padding(16.dp),
                 )
@@ -377,11 +494,13 @@ fun MapsScreen(
         ) {
             ResultsSheet(
                 results = uiState.results,
+                totalCount = uiState.unfilteredResults.size,
                 selectedId = uiState.selected?.id,
                 favoritePlaceIds = uiState.favoritePlaceIds,
                 pendingFavoritePlaceIds = uiState.pendingFavoritePlaceIds,
                 deviceLocation = uiState.deviceLocation,
                 onSelect = viewModel::selectPlace,
+                onDetails = viewModel::openDetails,
                 onToggleFavorite = viewModel::toggleFavorite,
                 onDirections = { context.startDirections(it) },
             )
@@ -401,12 +520,43 @@ fun MapsScreen(
                 color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp,
             ) {
-                Text(
-                    text = stringResource(R.string.maps_no_results, uiState.query),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp),
-                )
+                if (uiState.unfilteredResults.isNotEmpty()) {
+                    // The search found places, but the active filters hid them all.
+                    Row(
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.maps_no_filter_matches),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = viewModel::clearFilters) { Text(stringResource(R.string.filter_clear)) }
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.maps_no_results, uiState.query),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
             }
+        }
+
+        uiState.detailsPlace?.let { place ->
+            PlaceDetailsSheet(
+                place = place,
+                details = uiState.details,
+                photo = uiState.detailsPhoto,
+                isLoading = uiState.isLoadingDetails,
+                isFavorite = place.id in uiState.favoritePlaceIds,
+                onDismiss = viewModel::closeDetails,
+                onToggleFavorite = { viewModel.toggleFavorite(place) },
+                onDirections = { context.startDirections(place) },
+                onShare = { context.sharePlace(place) },
+                onCall = { context.dial(it) },
+                onWebsite = { context.openWebsite(it) },
+            )
         }
 
         SnackbarHost(
@@ -495,28 +645,44 @@ private fun TrendingSearchChips(
 }
 
 @Composable
-private fun ItineraryCard(text: String, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp,
+private fun FilterRow(
+    filters: PlaceFilters,
+    onOpenNow: () -> Unit,
+    onRating: () -> Unit,
+    onPrice: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .heightIn(max = 320.dp)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Text(
-                text = stringResource(R.string.itinerary_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp),
-            )
+        val chipColors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+        )
+        FilterChip(
+            selected = filters.openNow,
+            onClick = onOpenNow,
+            label = { Text(stringResource(R.string.filter_open_now)) },
+            colors = chipColors,
+        )
+        FilterChip(
+            selected = filters.minRating != null,
+            onClick = onRating,
+            label = { Text(stringResource(R.string.filter_rating_4)) },
+            colors = chipColors,
+        )
+        FilterChip(
+            selected = filters.maxPriceLevel != null,
+            onClick = onPrice,
+            label = { Text(stringResource(R.string.filter_price_2)) },
+            colors = chipColors,
+        )
+        if (filters.isActive) {
+            TextButton(onClick = onClear) { Text(stringResource(R.string.filter_clear)) }
         }
     }
 }
@@ -524,11 +690,13 @@ private fun ItineraryCard(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun ResultsSheet(
     results: List<PlaceResult>,
+    totalCount: Int,
     selectedId: String?,
     favoritePlaceIds: Set<String>,
     pendingFavoritePlaceIds: Set<String>,
     deviceLocation: DeviceLocation?,
     onSelect: (PlaceResult) -> Unit,
+    onDetails: (PlaceResult) -> Unit,
     onToggleFavorite: (PlaceResult) -> Unit,
     onDirections: (PlaceResult) -> Unit,
     modifier: Modifier = Modifier,
@@ -543,12 +711,13 @@ private fun ResultsSheet(
     ) {
         Column {
             Text(
-                text = pluralStringResource(R.plurals.maps_results_count, results.size, results.size),
+                text = pluralStringResource(R.plurals.maps_results_count, results.size, results.size) +
+                    if (totalCount > results.size) " · " + stringResource(R.string.maps_filtered_count, results.size, totalCount) else "",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp),
             )
-            LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
+            LazyColumn(modifier = Modifier.heightIn(max = sheetListMaxHeight(240.dp))) {
                 items(items = results, key = { it.id }) { place ->
                     val isSelected = place.id == selectedId
                     val isFavorite = place.id in favoritePlaceIds
@@ -578,6 +747,7 @@ private fun ResultsSheet(
                         supportingContent = {
                             Column {
                                 Text(place.description)
+                                PlaceMetaLine(place)
                                 if (distance != null) {
                                     Text(
                                         text = distance.toDistanceLabel(),
@@ -634,7 +804,9 @@ private fun ResultsSheet(
                                 fadeOutSpec = tween(180),
                                 placementSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
                             )
-                            .clickable { onSelect(place) },
+                            // First tap selects and recentres; tapping the selected row again
+                            // opens its full details.
+                            .clickable { if (isSelected) onDetails(place) else onSelect(place) },
                     )
                     HorizontalDivider()
                 }

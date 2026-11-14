@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -14,7 +15,9 @@ import com.freemind.ai.domain.model.PlaceResult
 import com.freemind.ai.domain.model.priceLabel
 import com.freemind.ai.domain.model.ratingLabel
 
-private val OpenGreen = Color(0xFF2E7D32)
+// Dark green reads well on a light surface; on a dark one it nearly vanishes, so it flips to a light green.
+private val OpenGreenOnLight = Color(0xFF2E7D32)
+private val OpenGreenOnDark = Color(0xFF81C784)
 
 /**
  * "4.6★ (1,234) · $$ · Open now" - whichever of rating, price and open/closed the
@@ -33,6 +36,7 @@ internal fun PlaceMetaLine(place: PlaceResult, modifier: Modifier = Modifier) {
         null -> null
     }
     val closedColor = MaterialTheme.colorScheme.error
+    val openColor = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) OpenGreenOnDark else OpenGreenOnLight
     val neutral = MaterialTheme.colorScheme.onSurfaceVariant
     Text(
         text = buildAnnotatedString {
@@ -40,7 +44,7 @@ internal fun PlaceMetaLine(place: PlaceResult, modifier: Modifier = Modifier) {
             append(parts.joinToString(" · "))
             if (openText != null) {
                 if (parts.isNotEmpty()) append(" · ")
-                withStyle(SpanStyle(color = if (openNow == true) OpenGreen else closedColor)) { append(openText) }
+                withStyle(SpanStyle(color = if (openNow == true) openColor else closedColor)) { append(openText) }
             }
         },
         style = MaterialTheme.typography.labelMedium,

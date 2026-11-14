@@ -117,6 +117,24 @@ class ItineraryEditingTest {
         assertSame(added, added.addStop(2, place("mine")))
     }
 
+    @Test fun `a stop added for a time of day lands after the stops at or before it`() {
+        // Day 1 is SIGHT (morning), EAT (midday), SWIM (afternoon).
+        val evening = twoDays.addStop(1, place("late"), DaySlot.EVENING)
+        assertEquals(listOf("a", "b", "c", "late"), ids(evening, 1))
+        assertEquals(DaySlot.EVENING, evening.stopAt(1, 3)!!.timeSlot)
+
+        val morning = twoDays.addStop(1, place("early"), DaySlot.MORNING)
+        assertEquals(listOf("a", "early", "b", "c"), ids(morning, 1))
+
+        val midday = twoDays.addStop(1, place("lunch"), DaySlot.MIDDAY)
+        assertEquals(listOf("a", "b", "lunch", "c"), ids(midday, 1))
+    }
+
+    @Test fun `a custom stop with no chosen time falls back to anytime`() {
+        assertEquals(DaySlot.ANYTIME, twoDays.addStop(2, place("mine")).stopAt(2, 1)!!.timeSlot)
+        assertEquals(DaySlot.MORNING, twoDays.stopAt(1, 0)!!.timeSlot)
+    }
+
     @Test fun `stop notes are trimmed and stored`() {
         val noted = twoDays.setStopNote(1, 0, "  booked 7pm  ")
         assertEquals("booked 7pm", noted.stopAt(1, 0)!!.note)

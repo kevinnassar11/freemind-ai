@@ -149,6 +149,14 @@
 
     <!-- Editing a plan -->
     <string name="slot_added">Added by you</string>
+    <string name="plan_sheet_resize">Resize plan</string>
+    <string name="slot_custom">%1$s · Added by you</string>
+    <string name="add_stop_when">Time of day</string>
+    <string name="details_call_number">Call %1$s</string>
+    <string name="settings_danger_zone">Danger zone</string>
+    <string name="settings_danger_zone_body">Deleting your account permanently removes your data and cannot be undone.</string>
+    <string name="delete_account_keyword">DELETE</string>
+    <string name="delete_account_type_to_confirm">Type %1$s to confirm.</string>
     <string name="plan_add_stop">Add a stop</string>
     <string name="plan_day_empty">Nothing planned for this day yet.</string>
     <string name="stop_more">More options</string>
@@ -246,4 +254,17 @@
     <string name="reminder_eve_title">Your trip to %1$s starts tomorrow</string>
     <string name="reminder_day_title">Day %1$d in %2$s</string>
     <string name="reminder_empty_day">Nothing planned yet. Tap to add stops.</string>
+
+    <!-- Plan overview paragraph -->
+    <string name="overview_intro">A %1$d-day trip to %2$s.</string>
+    <string name="overview_intro_themed">A %1$d-day trip to %2$s, built around %3$s.</string>
+    <string name="overview_day">Day %1$d covers %2$s.</string>
+    <string name="overview_top_rated">The best-rated stop is %1$s (%2$s).</string>
+    <string name="kind_sight">sights</string>
+    <string name="kind_culture">culture</string>
+    <string name="kind_nature">nature</string>
+    <string name="kind_eat">food</string>
+    <string name="kind_swim">beach time</string>
+    <string name="kind_shopping">shopping</string>
+    <string name="kind_nightlife">nightlife</string>
 </resources>

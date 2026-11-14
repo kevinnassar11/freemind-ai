@@ -5,9 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,18 +39,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.freemind.ai.R
 import com.freemind.ai.domain.model.PlaceDetails
 import com.freemind.ai.domain.model.PlaceResult
+import java.time.LocalDate
+
+private const val DAYS_IN_WEEK = 7
 
 /**
  * Everything known about one place: photo, rating/price/open status, address, and
  * one-tap actions (directions, call, website, share, favourite) plus weekly hours.
  * Phone, website and hours arrive after the sheet opens, so they fill in once loaded.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun PlaceDetailsSheet(
     place: PlaceResult,
@@ -94,18 +101,24 @@ internal fun PlaceDetailsSheet(
                 )
             }
 
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            // Wraps rather than scrolling sideways, so no action is ever clipped at the edge.
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilledTonalButton(onClick = onDirections) {
                     Icon(Icons.Filled.Directions, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text(stringResource(R.string.maps_directions), modifier = Modifier.padding(start = 8.dp))
                 }
                 details?.dialNumber?.let { number ->
-                    OutlinedButton(onClick = { onCall(number) }) {
+                    // The number itself is the label, so it appears once and is the thing you tap.
+                    val callDescription = stringResource(R.string.details_call_number, number)
+                    OutlinedButton(
+                        onClick = { onCall(number) },
+                        modifier = Modifier.semantics { contentDescription = callDescription },
+                    ) {
                         Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.details_call), modifier = Modifier.padding(start = 8.dp))
+                        Text(number, modifier = Modifier.padding(start = 8.dp))
                     }
                 }
                 details?.website?.let { site ->
@@ -144,15 +157,24 @@ internal fun PlaceDetailsSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 else -> {
-                    details.phone?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                     if (details.weekdayHours.isNotEmpty()) {
                         Text(
                             text = stringResource(R.string.details_hours),
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.padding(top = 4.dp),
                         )
-                        details.weekdayHours.forEach { line ->
-                            Text(line, style = MaterialTheme.typography.bodySmall)
+                        // Google lists the week Monday first, so today's line is at that index.
+                        val todayIndex = LocalDate.now().dayOfWeek.value - 1
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            details.weekdayHours.forEachIndexed { index, line ->
+                                val isToday = details.weekdayHours.size == DAYS_IN_WEEK && index == todayIndex
+                                Text(
+                                    text = line,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
                         }
                     }
                 }

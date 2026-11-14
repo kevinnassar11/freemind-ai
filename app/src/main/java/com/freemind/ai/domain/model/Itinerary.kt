@@ -17,6 +17,8 @@ enum class StopKind(val slot: DaySlot) {
     CUSTOM(DaySlot.ANYTIME),
 }
 
+/** Declaration order is the order a day runs in; [ANYTIME] sorts last. */
+@Serializable
 enum class DaySlot { MORNING, MIDDAY, AFTERNOON, EVENING, ANYTIME }
 
 @Serializable
@@ -29,7 +31,14 @@ data class ItineraryStop(
     val verb: String,
     /** The traveller's own note for this stop - a booking time, a reference number. */
     val note: String = "",
-)
+    /** The time of day the traveller chose for a stop they added. Null for planner
+     *  stops (their [kind] decides) and for custom stops saved before this existed. */
+    val slot: DaySlot? = null,
+) {
+    /** When in the day this stop happens. */
+    val timeSlot: DaySlot
+        get() = slot ?: kind.slot
+}
 
 @Serializable
 data class ItineraryDay(val day: Int, val stops: List<ItineraryStop>)

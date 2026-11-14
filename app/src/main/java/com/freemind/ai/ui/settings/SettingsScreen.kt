@@ -8,6 +8,23 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Column
@@ -104,7 +121,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
-            Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
+            Text(
+                text = stringResource(R.string.settings_title),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
 
             SectionHeader(stringResource(R.string.settings_appearance))
             ThemeModeSelector(selected = uiState.themeMode, onSelect = viewModel::setThemeMode)
@@ -128,6 +149,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             HistoryToggleRow(checked = uiState.historyEnabled, onCheckedChange = viewModel::setHistoryEnabled)
             SettingsRow(
                 label = stringResource(R.string.clear_search_history),
+                icon = Icons.Filled.DeleteSweep,
                 trailing = {
                     AnimatedVisibility(visible = uiState.isClearingHistory, enter = fadeIn(), exit = fadeOut()) {
                         CircularProgressIndicator(modifier = Modifier.padding(4.dp))
@@ -139,8 +161,16 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
             SectionHeader(stringResource(R.string.settings_export))
-            SettingsRow(label = stringResource(R.string.export_favorites), onClick = viewModel::exportFavorites)
-            SettingsRow(label = stringResource(R.string.export_history), onClick = viewModel::exportSearchHistory)
+            SettingsRow(
+                label = stringResource(R.string.export_favorites),
+                icon = Icons.Filled.FileDownload,
+                onClick = viewModel::exportFavorites,
+            )
+            SettingsRow(
+                label = stringResource(R.string.export_history),
+                icon = Icons.Filled.FileDownload,
+                onClick = viewModel::exportSearchHistory,
+            )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp))
 
@@ -154,10 +184,32 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     modifier = Modifier.padding(bottom = 12.dp),
                 )
             }
-            SettingsRow(label = stringResource(R.string.sign_out), onClick = { showSignOutDialog = true })
+            SettingsRow(
+                label = stringResource(R.string.sign_out),
+                icon = Icons.AutoMirrored.Filled.Logout,
+                onClick = { showSignOutDialog = true },
+            )
+
+            // Deleting the account cannot be undone, so it sits in its own, clearly separate
+            // zone - not as the next row under Sign out, where a stray tap could reach it.
+            Spacer(Modifier.height(32.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
+            Text(
+                text = stringResource(R.string.settings_danger_zone),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 20.dp, bottom = 4.dp),
+            )
+            Text(
+                text = stringResource(R.string.settings_danger_zone_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
             SettingsRow(
                 label = stringResource(R.string.delete_account),
-                labelColor = MaterialTheme.colorScheme.error,
+                icon = Icons.Filled.DeleteForever,
+                tint = MaterialTheme.colorScheme.error,
                 trailing = {
                     AnimatedVisibility(visible = uiState.isDeletingAccount, enter = fadeIn(), exit = fadeOut()) {
                         CircularProgressIndicator(modifier = Modifier.padding(4.dp))
@@ -165,6 +217,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 },
                 onClick = { showDeleteAccountDialog = true },
             )
+            Spacer(Modifier.height(16.dp))
         }
     }
 
@@ -185,10 +238,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
     }
     if (showDeleteAccountDialog) {
-        ConfirmDialog(
-            title = stringResource(R.string.delete_account_confirm_title),
-            body = stringResource(R.string.delete_account_confirm_body),
-            destructive = true,
+        DeleteAccountDialog(
             onConfirm = { showDeleteAccountDialog = false; viewModel.deleteAccount {} },
             onDismiss = { showDeleteAccountDialog = false },
         )
@@ -345,11 +395,13 @@ private fun HistoryToggleRow(checked: Boolean, onCheckedChange: (Boolean) -> Uni
     }
 }
 
+/** A tappable settings row: icon, label and a chevron, with a ripple and a full-width touch target. */
 @Composable
 private fun SettingsRow(
     label: String,
+    icon: ImageVector,
     onClick: () -> Unit,
-    labelColor: Color = MaterialTheme.colorScheme.onSurface,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
     trailing: @Composable () -> Unit = {},
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -362,15 +414,73 @@ private fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale },
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TextButton(onClick = onClick, interactionSource = interactionSource, modifier = Modifier.weight(1f)) {
-            Text(text = label, color = labelColor, modifier = Modifier.fillMaxWidth())
-        }
+        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = tint,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
+        )
         trailing()
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
+}
+
+/**
+ * Account deletion is permanent, so a tap on "Confirm" is not enough: the traveller has to
+ * type a word first. The button stays disabled until it matches.
+ */
+@Composable
+private fun DeleteAccountDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val keyword = stringResource(R.string.delete_account_keyword)
+    var typed by remember { mutableStateOf("") }
+    val matches = typed.trim().equals(keyword, ignoreCase = true)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(Icons.Filled.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+        },
+        title = { Text(stringResource(R.string.delete_account_confirm_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.delete_account_confirm_body))
+                Text(
+                    text = stringResource(R.string.delete_account_type_to_confirm, keyword),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = typed,
+                    onValueChange = { typed = it },
+                    singleLine = true,
+                    isError = typed.isNotEmpty() && !matches,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = matches) {
+                Text(
+                    text = stringResource(R.string.delete_account),
+                    color = if (matches) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                )
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
 }
 
 @Composable

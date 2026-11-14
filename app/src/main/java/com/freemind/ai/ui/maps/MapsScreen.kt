@@ -89,6 +89,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -121,6 +122,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -129,6 +131,7 @@ import kotlin.math.roundToInt
 private val DEFAULT_LOCATION = LatLng(37.7749, -122.4194)
 private const val DEFAULT_ZOOM = 11f
 private const val RESULT_ZOOM = 14f
+private const val SHEET_SETTLE_MS = 250L
 
 /** Space the mode chips and search bar take from the top of the map while a plan is open. */
 private val PLAN_TOP_CHROME_HEIGHT = 200.dp
@@ -149,6 +152,7 @@ fun MapsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -235,6 +239,13 @@ fun MapsScreen(
         if (runPlanId != null) viewModel.openSavedPlan(runPlanId)
     }
 
+    // A plan taking over the screen also ends the typing that produced it (however it was
+    // started - keyboard, chip or history), so the search field gives up its focus ring.
+    val hasPlan = uiState.itinerary != null
+    LaunchedEffect(hasPlan) {
+        if (hasPlan) focusManager.clearFocus()
+    }
+
     // Recentre the map whenever the selected place changes (search result tapped,
     // or the first hit auto-selected after a search).
     LaunchedEffect(uiState.selected) {
@@ -254,6 +265,9 @@ fun MapsScreen(
         val plan = uiState.itinerary ?: return@LaunchedEffect
         // Wait for the sheet to be measured, or the first fit would ignore it.
         if (planSheetHeightPx == 0) return@LaunchedEffect
+        // The sheet animates when it is dragged or its header collapses; wait for the
+        // height to settle so the camera moves once, not on every frame of that.
+        delay(SHEET_SETTLE_MS)
         val points = plan.days
             .filter { uiState.selectedDay == null || it.day == uiState.selectedDay }
             .flatMap { it.stops }
@@ -472,6 +486,9 @@ fun MapsScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = {
                     keyboard?.hide()
+                    // Drop focus too, or the focus ring and caret stay on the field
+                    // after the results (or a plan) have taken over the screen.
+                    focusManager.clearFocus()
                     viewModel.search()
                 }),
             )
@@ -642,6 +659,7 @@ fun MapsScreen(
             AddStopDialog(
                 state = addStop,
                 onQueryChange = viewModel::onAddStopQueryChange,
+                onSlotChange = viewModel::setAddStopSlot,
                 onSearch = viewModel::searchAddStop,
                 onPick = viewModel::confirmAddStop,
                 onDismiss = viewModel::closeAddStop,

@@ -10,6 +10,7 @@ import com.freemind.ai.data.repository.FavoriteWriteResult
 import com.freemind.ai.data.repository.PlacesRepository
 import com.freemind.ai.data.repository.SettingsRepository
 import com.freemind.ai.domain.model.DayForecast
+import com.freemind.ai.domain.model.DaySlot
 import com.freemind.ai.domain.model.DeviceLocation
 import com.freemind.ai.domain.model.Itinerary
 import com.freemind.ai.domain.model.PlaceDetails
@@ -48,6 +49,9 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 /** Debounce so a typed word costs one Places call, not one per keystroke. */
+/** The times of day a traveller can pick for a stop they add (everything but ANYTIME). */
+internal val SCHEDULED_SLOTS = listOf(DaySlot.MORNING, DaySlot.MIDDAY, DaySlot.AFTERNOON, DaySlot.EVENING)
+
 private const val AUTOCOMPLETE_DEBOUNCE_MS = 350L
 private const val MIN_AUTOCOMPLETE_CHARS = 2
 
@@ -77,6 +81,8 @@ enum class NearMeCategory(val query: String) {
 /** The "add a stop of your own" dialog: a search box and what it found. */
 data class AddStopState(
     val day: Int,
+    /** When in the day the new stop goes; defaults to the first part of the day with nothing planned. */
+    val slot: DaySlot = DaySlot.AFTERNOON,
     val query: String = "",
     val results: List<PlaceResult> = emptyList(),
     val isSearching: Boolean = false,
@@ -659,7 +665,15 @@ class MapsViewModel @Inject constructor(
     // ---- Adding a stop of your own ---------------------------------------------
 
     fun openAddStop(day: Int) {
-        _uiState.value = _uiState.value.copy(addStop = AddStopState(day))
+        val taken = _uiState.value.itinerary?.days?.firstOrNull { it.day == day }
+            ?.stops?.map { it.timeSlot }.orEmpty().toSet()
+        val slot = SCHEDULED_SLOTS.firstOrNull { it !in taken } ?: DaySlot.EVENING
+        _uiState.value = _uiState.value.copy(addStop = AddStopState(day, slot))
+    }
+
+    fun setAddStopSlot(slot: DaySlot) {
+        val state = _uiState.value.addStop ?: return
+        _uiState.value = _uiState.value.copy(addStop = state.copy(slot = slot))
     }
 
     fun closeAddStop() {
@@ -702,9 +716,10 @@ class MapsViewModel @Inject constructor(
     }
 
     fun confirmAddStop(place: PlaceResult) {
-        val day = _uiState.value.addStop?.day ?: return
+        val state = _uiState.value.addStop ?: return
+        val day = state.day
         val before = _uiState.value.itinerary
-        applyEdit { it.addStop(day, place) }
+        applyEdit { it.addStop(day, place, state.slot) }
         if (before != null && _uiState.value.itinerary === before) {
             _events.trySend(MapsEvent.StopAlreadyInDay)
         }

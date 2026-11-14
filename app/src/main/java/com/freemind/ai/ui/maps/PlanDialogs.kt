@@ -27,6 +27,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +51,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.freemind.ai.R
 import com.freemind.ai.domain.model.ChecklistItem
+import com.freemind.ai.domain.model.DaySlot
 import com.freemind.ai.domain.model.PlaceResult
 import java.time.Instant
 import java.time.LocalDate
@@ -126,10 +128,12 @@ internal fun StopNoteDialog(
 private const val MAX_STOP_NOTE_CHARS = 200
 
 /** Search for any place and add it to a day of the plan. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun AddStopDialog(
     state: AddStopState,
     onQueryChange: (String) -> Unit,
+    onSlotChange: (DaySlot) -> Unit,
     onSearch: () -> Unit,
     onPick: (PlaceResult) -> Unit,
     onDismiss: () -> Unit,
@@ -139,6 +143,24 @@ internal fun AddStopDialog(
         title = { Text(stringResource(R.string.add_stop_title, state.day)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.add_stop_when),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // Wraps instead of scrolling sideways, so all four times of day are always visible.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    SCHEDULED_SLOTS.forEach { slot ->
+                        FilterChip(
+                            selected = state.slot == slot,
+                            onClick = { onSlotChange(slot) },
+                            label = { Text(stringResource(slot.labelRes())) },
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = state.query,
                     onValueChange = onQueryChange,

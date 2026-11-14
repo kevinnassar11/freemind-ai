@@ -152,6 +152,14 @@
 
     <!-- Editing a plan -->
     <string name="slot_added">أضفته أنت</string>
+    <string name="plan_sheet_resize">تغيير حجم الخطة</string>
+    <string name="slot_custom">%1$s · أضفته أنت</string>
+    <string name="add_stop_when">وقت اليوم</string>
+    <string name="details_call_number">اتصال %1$s</string>
+    <string name="settings_danger_zone">منطقة الخطر</string>
+    <string name="settings_danger_zone_body">حذف حسابك يزيل بياناتك نهائيًا ولا يمكن التراجع عنه.</string>
+    <string name="delete_account_keyword">حذف</string>
+    <string name="delete_account_type_to_confirm">اكتب %1$s للتأكيد.</string>
     <string name="plan_add_stop">إضافة محطة</string>
     <string name="plan_day_empty">لا يوجد شيء مخطط لهذا اليوم بعد.</string>
     <string name="stop_more">خيارات أخرى</string>
@@ -249,4 +257,17 @@
     <string name="reminder_eve_title">رحلتك إلى %1$s تبدأ غدًا</string>
     <string name="reminder_day_title">اليوم %1$d في %2$s</string>
     <string name="reminder_empty_day">لا شيء مخطط بعد. اضغط لإضافة محطات.</string>
+
+    <!-- Plan overview paragraph -->
+    <string name="overview_intro">رحلة لمدة %1$d أيام إلى %2$s.</string>
+    <string name="overview_intro_themed">رحلة لمدة %1$d أيام إلى %2$s، تتمحور حول %3$s.</string>
+    <string name="overview_day">يشمل اليوم %1$d: %2$s.</string>
+    <string name="overview_top_rated">أعلى المحطات تقييمًا: %1$s (%2$s).</string>
+    <string name="kind_sight">المعالم</string>
+    <string name="kind_culture">الثقافة</string>
+    <string name="kind_nature">الطبيعة</string>
+    <string name="kind_eat">الطعام</string>
+    <string name="kind_swim">السباحة</string>
+    <string name="kind_shopping">التسوق</string>
+    <string name="kind_nightlife">الحياة الليلية</string>
 </resources>

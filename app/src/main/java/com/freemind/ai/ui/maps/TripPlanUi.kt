@@ -1,18 +1,25 @@
 package com.freemind.ai.ui.maps
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +31,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -43,6 +51,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +61,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -66,6 +79,7 @@ import com.freemind.ai.domain.model.Itinerary
 import com.freemind.ai.domain.model.ItineraryDay
 import com.freemind.ai.domain.model.ItineraryStop
 import com.freemind.ai.domain.model.PlaceResult
+import com.freemind.ai.domain.model.StopKind
 import com.freemind.ai.domain.model.WeatherKind
 import com.freemind.ai.domain.model.canSwap
 import com.freemind.ai.domain.model.dateOf
@@ -93,7 +107,7 @@ internal fun dayHue(day: Int): Float = DAY_HUES[(day - 1).coerceAtLeast(0) % DAY
 
 private fun dayColor(day: Int): Color = Color.hsv(dayHue(day), 0.78f, 0.92f)
 
-private fun DaySlot.labelRes(): Int = when (this) {
+internal fun DaySlot.labelRes(): Int = when (this) {
     DaySlot.MORNING -> R.string.slot_morning
     DaySlot.MIDDAY -> R.string.slot_midday
     DaySlot.AFTERNOON -> R.string.slot_afternoon
@@ -120,6 +134,20 @@ internal fun LocalDate.shortLabel(): String =
 @Composable
 internal fun sheetListMaxHeight(portraitMax: Dp): Dp =
     minOf(portraitMax, (LocalConfiguration.current.screenHeightDp * 0.33f).dp)
+
+/** How much of the plan the sheet shows: just its header, the usual list, or a taller list. */
+private enum class SheetSize {
+    PEEK, NORMAL, TALL;
+
+    fun bigger() = entries[(ordinal + 1).coerceAtMost(entries.lastIndex)]
+    fun smaller() = entries[(ordinal - 1).coerceAtLeast(0)]
+}
+
+/** How far a drag on the sheet's header must travel to move it one size. */
+private val RESIZE_DRAG_STEP = 40.dp
+
+/** A tall sheet's list may take this share of the screen height (portrait only). */
+private const val TALL_LIST_FRACTION = 0.42f
 
 /** Everything the plan sheet can ask the screen to do. */
 internal class PlanActions(
@@ -155,6 +183,31 @@ internal fun ItinerarySheet(
     actions: PlanActions,
     modifier: Modifier = Modifier,
 ) {
+    var size by remember { mutableStateOf(SheetSize.NORMAL) }
+    val listState = rememberLazyListState()
+    // A different day is a different list: start it from the top.
+    LaunchedEffect(selectedDay) { listState.scrollToItem(0) }
+    // Once the list is scrolled, the quick-action chips fold away so the stops get the room.
+    val scrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+    }
+    val density = LocalDensity.current
+    var actionsHeight by remember { mutableStateOf(0.dp) }
+    val showActions = size != SheetSize.PEEK && !scrolled
+
+    val normalMax = sheetListMaxHeight(300.dp)
+    val configuration = LocalConfiguration.current
+    val isPortrait = configuration.screenHeightDp > configuration.screenWidthDp
+    val baseMax = when (size) {
+        SheetSize.PEEK -> 0.dp
+        SheetSize.NORMAL -> normalMax
+        SheetSize.TALL -> if (isPortrait) maxOf(normalMax, (configuration.screenHeightDp * TALL_LIST_FRACTION).dp) else normalMax
+    }
+    // The list takes over the room the folded chips gave up, so the sheet itself keeps its
+    // height (and the map behind it keeps its framing) while scrolling.
+    val freed = if (scrolled && size != SheetSize.PEEK) actionsHeight else 0.dp
+    val listMax by animateDpAsState(targetValue = baseMax + freed, animationSpec = tween(250), label = "planListMax")
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
@@ -162,62 +215,97 @@ internal fun ItinerarySheet(
         shadowElevation = 8.dp,
     ) {
         Column {
-            Row(
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            val stepPx = with(density) { RESIZE_DRAG_STEP.toPx() }
+            val resizeLabel = stringResource(R.string.plan_sheet_resize)
+            Column(
+                modifier = Modifier.pointerInput(stepPx, size) {
+                    var travelled = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { travelled = 0f },
+                        onDragEnd = {
+                            if (travelled < -stepPx) size = size.bigger() else if (travelled > stepPx) size = size.smaller()
+                        },
+                        onDragCancel = { travelled = 0f },
+                    ) { _, delta -> travelled += delta }
+                },
             ) {
-                Text(
-                    text = stringResource(R.string.plan_title, plan.days.size, plan.destinationName),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = actions.onSave) {
-                    Icon(
-                        imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription = stringResource(if (isSaved) R.string.plan_unsave else R.string.plan_save),
-                        tint = if (isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(24.dp)
+                        .clickable(onClickLabel = resizeLabel) {
+                            size = if (size == SheetSize.NORMAL) SheetSize.TALL else SheetSize.NORMAL
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        Modifier
+                            .width(36.dp)
+                            .height(4.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
                     )
                 }
-                ShareMenuButton(onShareText = actions.onShareText, onSharePdf = actions.onSharePdf)
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                val startDate = plan.dateOf(1)
-                AssistChip(
-                    onClick = actions.onPickDate,
-                    label = { Text(startDate?.shortLabel() ?: stringResource(R.string.plan_set_dates)) },
-                    leadingIcon = { Icon(Icons.Filled.CalendarMonth, null, Modifier.size(AssistChipDefaults.IconSize)) },
-                )
-                if (forecasts.size >= 2 && plan.days.size >= 2) {
-                    AssistChip(
-                        onClick = actions.onMatchWeather,
-                        label = { Text(stringResource(R.string.plan_match_weather)) },
-                        leadingIcon = { Icon(Icons.Filled.WbSunny, null, Modifier.size(AssistChipDefaults.IconSize)) },
+                Row(
+                    modifier = Modifier.padding(start = 16.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.plan_title, plan.days.size, plan.destinationName),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
                     )
-                }
-                AssistChip(
-                    onClick = actions.onOpenNotes,
-                    label = {
-                        val open = plan.checklist.count { !it.done }
-                        Text(
-                            if (open > 0) stringResource(R.string.plan_notes_with_count, open) else stringResource(R.string.plan_notes),
+                    IconButton(onClick = actions.onSave) {
+                        Icon(
+                            imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = stringResource(if (isSaved) R.string.plan_unsave else R.string.plan_save),
+                            tint = if (isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    },
-                    leadingIcon = { Icon(Icons.Filled.EditNote, null, Modifier.size(AssistChipDefaults.IconSize)) },
-                )
+                    }
+                    ShareMenuButton(onShareText = actions.onShareText, onSharePdf = actions.onSharePdf)
+                }
+            }
+
+            AnimatedVisibility(visible = showActions) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { actionsHeight = with(density) { it.height.toDp() } }
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val startDate = plan.dateOf(1)
+                    AssistChip(
+                        onClick = actions.onPickDate,
+                        label = { Text(startDate?.shortLabel() ?: stringResource(R.string.plan_set_dates)) },
+                        leadingIcon = { Icon(Icons.Filled.CalendarMonth, null, Modifier.size(AssistChipDefaults.IconSize)) },
+                    )
+                    if (forecasts.size >= 2 && plan.days.size >= 2) {
+                        AssistChip(
+                            onClick = actions.onMatchWeather,
+                            label = { Text(stringResource(R.string.plan_match_weather)) },
+                            leadingIcon = { Icon(Icons.Filled.WbSunny, null, Modifier.size(AssistChipDefaults.IconSize)) },
+                        )
+                    }
+                    AssistChip(
+                        onClick = actions.onOpenNotes,
+                        label = {
+                            val open = plan.checklist.count { !it.done }
+                            Text(
+                                if (open > 0) stringResource(R.string.plan_notes_with_count, open) else stringResource(R.string.plan_notes),
+                            )
+                        },
+                        leadingIcon = { Icon(Icons.Filled.EditNote, null, Modifier.size(AssistChipDefaults.IconSize)) },
+                    )
+                }
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 12.dp, vertical = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilterChip(
@@ -243,7 +331,21 @@ internal fun ItinerarySheet(
             }
 
             val visibleDays = plan.days.filter { selectedDay == null || it.day == selectedDay }
-            LazyColumn(modifier = Modifier.heightIn(max = sheetListMaxHeight(300.dp))) {
+            val context = LocalContext.current
+            val overview = remember(plan) { plan.overview(context.overviewLabels()) }
+            LazyColumn(state = listState, modifier = Modifier.heightIn(max = listMax)) {
+                // The written summary comes first, above the day-by-day list - but only on
+                // the all-days view, so a single day's list keeps all the room.
+                if (selectedDay == null && overview.isNotEmpty()) {
+                    item(key = "overview") {
+                        Text(
+                            text = overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        )
+                    }
+                }
                 visibleDays.forEach { day ->
                     item(key = "header-${day.day}") {
                         DayHeader(day = day, date = plan.dateOf(day.day), forecast = forecasts[day.day])
@@ -354,7 +456,7 @@ private fun StopRow(
 ) {
     Column {
         ListItem(
-            overlineContent = { Text(stringResource(stop.kind.slot.labelRes())) },
+            overlineContent = { Text(stopOverline(stop)) },
             headlineContent = { Text(stopHeadline(stop)) },
             supportingContent = {
                 Column {
@@ -389,6 +491,17 @@ private fun StopRow(
     }
 }
 
+/** "Morning", or "Evening · Added by you" for a stop the traveller added at a time of their choice. */
+@Composable
+private fun stopOverline(stop: ItineraryStop): String {
+    val slot = stringResource(stop.timeSlot.labelRes())
+    return if (stop.kind == StopKind.CUSTOM && stop.slot != null) {
+        stringResource(R.string.slot_custom, slot)
+    } else {
+        slot
+    }
+}
+
 /** "Lunch at Name" (in the app's language), or just the name for a stop the traveller added. */
 @Composable
 private fun stopHeadline(stop: ItineraryStop): String {
@@ -412,23 +525,22 @@ private fun StopMenu(
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.stop_more))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            if (index > 0) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.stop_move_up)) },
-                    leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) },
-                    onClick = { open = false; actions.onMoveStop(day, index, -1) },
-                )
-            }
-            if (index < count - 1) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.stop_move_down)) },
-                    leadingIcon = { Icon(Icons.Filled.ArrowDownward, null) },
-                    onClick = { open = false; actions.onMoveStop(day, index, 1) },
-                )
-            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.stop_move_up)) },
+                leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) },
+                enabled = index > 0,
+                onClick = { open = false; actions.onMoveStop(day, index, -1) },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.stop_move_down)) },
+                leadingIcon = { Icon(Icons.Filled.ArrowDownward, null) },
+                enabled = index < count - 1,
+                onClick = { open = false; actions.onMoveStop(day, index, 1) },
+            )
             otherDays.forEach { other ->
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.stop_move_to_day, other)) },
+                    leadingIcon = { Icon(Icons.Filled.Event, null) },
                     onClick = { open = false; actions.onMoveStopToDay(day, index, other) },
                 )
             }

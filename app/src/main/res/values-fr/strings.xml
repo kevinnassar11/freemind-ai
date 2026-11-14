@@ -102,7 +102,7 @@
 
     <!-- Trip plans -->
     <string name="plan_title">Plan de %1$d jours pour %2$s</string>
-    <string name="plan_all_days">Tous les jours</string>
+    <string name="plan_all_days">Tous</string>
     <string name="plan_day_chip">Jour %1$d</string>
     <string name="plan_day_header">Jour %1$d</string>
     <string name="plan_save">Enregistrer le plan</string>
@@ -149,6 +149,14 @@
 
     <!-- Editing a plan -->
     <string name="slot_added">Ajouté par vous</string>
+    <string name="plan_sheet_resize">Redimensionner le plan</string>
+    <string name="slot_custom">%1$s · Ajouté par vous</string>
+    <string name="add_stop_when">Moment de la journée</string>
+    <string name="details_call_number">Appeler %1$s</string>
+    <string name="settings_danger_zone">Zone de danger</string>
+    <string name="settings_danger_zone_body">La suppression de votre compte efface définitivement vos données et est irréversible.</string>
+    <string name="delete_account_keyword">SUPPRIMER</string>
+    <string name="delete_account_type_to_confirm">Saisissez %1$s pour confirmer.</string>
     <string name="plan_add_stop">Ajouter une étape</string>
     <string name="plan_day_empty">Rien de prévu pour ce jour pour l\'instant.</string>
     <string name="stop_more">Plus d\'options</string>
@@ -246,4 +254,17 @@
     <string name="reminder_eve_title">Votre voyage à %1$s commence demain</string>
     <string name="reminder_day_title">Jour %1$d à %2$s</string>
     <string name="reminder_empty_day">Rien de prévu pour l\'instant. Touchez pour ajouter des étapes.</string>
+
+    <!-- Plan overview paragraph -->
+    <string name="overview_intro">Un voyage de %1$d jours à %2$s.</string>
+    <string name="overview_intro_themed">Un voyage de %1$d jours à %2$s, centré sur %3$s.</string>
+    <string name="overview_day">Le jour %1$d couvre %2$s.</string>
+    <string name="overview_top_rated">L\'étape la mieux notée est %1$s (%2$s).</string>
+    <string name="kind_sight">les sites</string>
+    <string name="kind_culture">la culture</string>
+    <string name="kind_nature">la nature</string>
+    <string name="kind_eat">la cuisine</string>
+    <string name="kind_swim">la baignade</string>
+    <string name="kind_shopping">le shopping</string>
+    <string name="kind_nightlife">la vie nocturne</string>
 </resources>

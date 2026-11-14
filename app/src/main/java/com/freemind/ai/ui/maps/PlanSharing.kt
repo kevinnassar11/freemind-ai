@@ -173,7 +173,7 @@ internal fun writePlanPdf(file: File, plan: Itinerary, labels: PlanShareLabels) 
         val heading = labels.dayHeader(day.day) + (plan.dateOf(day.day)?.let { " · " + labels.dateLabel(it) } ?: "")
         draw(heading, dayPaint, spaceAfter = 5f)
         day.stops.forEach { stop ->
-            draw("${labels.slot(stop.kind.slot)} · ${stop.headline(labels)}", stopPaint, spaceAfter = 1f, indent = STOP_INDENT)
+            draw("${labels.slot(stop.timeSlot)} · ${stop.headline(labels)}", stopPaint, spaceAfter = 1f, indent = STOP_INDENT)
             if (stop.place.description.isNotBlank()) draw(stop.place.description, bodyPaint, spaceAfter = 1f, indent = STOP_INDENT)
             val meta = listOfNotNull(stop.place.ratingLabel(), stop.place.priceLabel()).joinToString(" · ")
             if (meta.isNotEmpty()) draw(meta, bodyPaint, spaceAfter = 1f, indent = STOP_INDENT)

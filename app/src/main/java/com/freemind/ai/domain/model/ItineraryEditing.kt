@@ -105,11 +105,17 @@ fun Itinerary.swapStop(day: Int, index: Int): Itinerary? {
     return swapped.copy(alternatives = alternatives)
 }
 
-/** Appends a place the traveller picked to [day]. No-op if that day already has it. */
-fun Itinerary.addStop(day: Int, place: PlaceResult): Itinerary {
+/**
+ * Adds a place the traveller picked to [day]. With a [slot] it goes in at that time of
+ * day - after every stop already scheduled at or before it - otherwise at the end.
+ * No-op if that day already has the place.
+ */
+fun Itinerary.addStop(day: Int, place: PlaceResult, slot: DaySlot? = null): Itinerary {
     val d = dayOrNull(day) ?: return this
     if (d.stops.any { it.place.id == place.id }) return this
-    return withDay(day) { it.copy(stops = it.stops + ItineraryStop(StopKind.CUSTOM, place, verb = "")) }
+    val stop = ItineraryStop(StopKind.CUSTOM, place, verb = "", slot = slot)
+    val at = if (slot == null) d.stops.size else d.stops.indexOfLast { it.timeSlot <= slot } + 1
+    return withDay(day) { it.copy(stops = it.stops.toMutableList().apply { add(at, stop) }) }
 }
 
 fun Itinerary.setStopNote(day: Int, index: Int, note: String): Itinerary {

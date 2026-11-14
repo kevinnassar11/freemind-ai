@@ -1,9 +1,0 @@
-com.freemind.ai.app-pngs-0 C:\Dev\FreeMind AI\app\build\generated\res\pngs\debug
-com.freemind.ai.app-res-1 C:\Dev\FreeMind AI\app\build\generated\res\processDebugGoogleServices
-com.freemind.ai.app-updated_navigation_xml-2 C:\Dev\FreeMind AI\app\build\generated\updated_navigation_xml\debug
-com.freemind.ai.app-packageDebugResources-3 C:\Dev\FreeMind AI\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.freemind.ai.app-packageDebugResources-4 C:\Dev\FreeMind AI\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.freemind.ai.app-debug-5 C:\Dev\FreeMind AI\app\build\intermediates\merged_res\debug\mergeDebugResources
-com.freemind.ai.app-debug-6 C:\Dev\FreeMind AI\app\src\debug\res
-com.freemind.ai.app-main-7 C:\Dev\FreeMind AI\app\src\main\res
-gradleHome-0 C:\Users\kevin\.gradle

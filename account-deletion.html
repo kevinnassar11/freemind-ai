@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>FreeMind Account Deletion</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: a single 680px reading column with a numbered path of four steps. */
+  :root {
+    color-scheme: light;
+    --paper: #faf9fc;
+    --paper-raised: #ffffff;
+    --ink: #1e1b2e;
+    --muted: #635f78;
+    --line: #e3e1ed;
+    --accent: #4f46e5;
+    --accent-soft: #eeecfb;
+    --accent-ink: #3730a3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #16141e; --paper-raised: #1d1a29; --ink: #ece9f7; --muted: #a39fbb;
+      --line: #322e45; --accent: #8b85f5; --accent-soft: #29253c; --accent-ink: #c7c2fb;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #16141e; --paper-raised: #1d1a29; --ink: #ece9f7; --muted: #a39fbb;
+    --line: #322e45; --accent: #8b85f5; --accent-soft: #29253c; --accent-ink: #c7c2fb;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 56px 96px;
+  }
+  .page { max-width: 680px; margin: 0 auto; }
+
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+  .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent-soft); display: grid; place-items: center; flex-shrink: 0; }
+  .brand-mark svg { width: 16px; height: 16px; fill: var(--accent); }
+  .brand-name { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 0.82rem; letter-spacing: 0.04em; color: var(--muted); text-transform: uppercase; }
+  .back-link { margin-left: auto; color: var(--muted); text-decoration: none; font-size: 0.86rem; }
+  .back-link:hover { color: var(--accent-ink); }
+
+  h1 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; font-size: 2.4rem; line-height: 1.12; margin: 0 0 12px; text-wrap: balance; }
+  .lede { font-size: 1.08rem; color: var(--muted); max-width: 58ch; margin: 0 0 40px; }
+
+  .path { display: flex; flex-direction: column; margin-bottom: 44px; counter-reset: step; }
+  .step { counter-increment: step; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 16px; padding: 18px 0; border-top: 1px solid var(--line); }
+  .step:first-child { border-top: none; padding-top: 0; }
+  .step::before { content: counter(step); font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; color: var(--accent-ink); background: var(--accent-soft); width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; }
+  .step h3 { margin: 0 0 4px; font-size: 1.02rem; font-weight: 600; }
+  .step p { margin: 0; color: var(--muted); font-size: 0.94rem; max-width: 50ch; }
+
+  .warning { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; font-size: 0.92rem; color: var(--accent-ink); margin-bottom: 48px; }
+
+  h2 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 600; font-size: 1.4rem; margin: 0 0 14px; padding-top: 32px; border-top: 1px solid var(--line); text-wrap: balance; }
+  p { max-width: 62ch; margin: 0 0 14px; }
+  a { color: var(--accent-ink); }
+  code { background: var(--accent-soft); color: var(--accent-ink); padding: 1px 6px; border-radius: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 0.86em; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.94rem; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  th { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  td.yes { color: var(--accent-ink); font-weight: 500; white-space: nowrap; }
+
+  footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 0.84rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brand">
+    <span class="brand-mark"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 22s-7.5-7-7.5-12.5a7.5 7.5 0 0 1 15 0C19.5 15 12 22 12 22zM9 9.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/></svg></span>
+    <span class="brand-name">FreeMind</span>
+    <a class="back-link" href="index.html">Privacy Policy</a>
+  </div>
+
+  <h1>Delete your account</h1>
+  <p class="lede">You can permanently remove your FreeMind account and everything tied to it at any time. If the app is installed you don't need to contact anyone.</p>
+
+  <div class="path">
+    <div class="step"><div><h3>Open Settings</h3><p>Sign in to FreeMind, then open the <strong>Settings</strong> tab.</p></div></div>
+    <div class="step"><div><h3>Find Account</h3><p>Scroll to the <strong>Account</strong> section.</p></div></div>
+    <div class="step"><div><h3>Tap Delete account</h3><p>It is written in red, and you are asked to confirm once before anything happens.</p></div></div>
+    <div class="step"><div><h3>Confirm</h3><p>Deletion starts immediately and can't be reversed.</p></div></div>
+  </div>
+
+  <div class="warning">This can't be undone. There is no recovery period and no way to restore a deleted account.</div>
+
+  <h2>No app installed?</h2>
+  <p>Email <strong>kevinnassar80@gmail.com</strong> with the subject <code>Account Deletion Request</code>, from the address you signed in with. We'll delete your data within 30 days and confirm by email.</p>
+
+  <h2>What gets deleted</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Data</th><th>Deleted</th></tr></thead>
+      <tbody>
+        <tr><td>Profile: email, name, photo, preferences</td><td class="yes">Yes</td></tr>
+        <tr><td>Search history</td><td class="yes">Yes</td></tr>
+        <tr><td>Favorite places and favorite lists</td><td class="yes">Yes</td></tr>
+        <tr><td>Saved trip plans, notes and checklists</td><td class="yes">Yes</td></tr>
+        <tr><td>Personalisation (taste) data on your phone</td><td class="yes">Yes</td></tr>
+        <tr><td>Notification token</td><td class="yes">Yes</td></tr>
+        <tr><td>Sign-in (Firebase) account</td><td class="yes">Yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Nothing is kept after deletion, except usage statistics that were already collected in aggregate and can't be tied back to you. The <a href="index.html">Privacy Policy</a> explains what is collected in the first place.</p>
+
+  <footer>FreeMind, Account Deletion</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<title>FreeMind Privacy Policy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: a quiet two-column reading page (contents rail + 680px text column), collapsing to one column on phones. */
+  :root {
+    --paper: #faf9fc;
+    --paper-raised: #ffffff;
+    --ink: #1e1b2e;
+    --muted: #635f78;
+    --line: #e3e1ed;
+    --accent: #4f46e5;
+    --accent-soft: #eeecfb;
+    --accent-ink: #3730a3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #16141e; --paper-raised: #1d1a29; --ink: #ece9f7; --muted: #a39fbb;
+      --line: #322e45; --accent: #8b85f5; --accent-soft: #29253c; --accent-ink: #c7c2fb;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #16141e; --paper-raised: #1d1a29; --ink: #ece9f7; --muted: #a39fbb;
+    --line: #322e45; --accent: #8b85f5; --accent-soft: #29253c; --accent-ink: #c7c2fb;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 56px 96px;
+  }
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 200px) minmax(0, 680px);
+    gap: 56px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  @media (max-width: 780px) {
+    .page { grid-template-columns: minmax(0, 1fr); }
+    .toc { display: none; }
+    body { padding-block: 32px 64px; }
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+  .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent-soft); display: grid; place-items: center; flex-shrink: 0; }
+  .brand-mark svg { width: 16px; height: 16px; fill: var(--accent); }
+  .brand-name { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 0.82rem; letter-spacing: 0.04em; color: var(--muted); text-transform: uppercase; }
+
+  .toc { position: sticky; top: 56px; align-self: start; padding-top: 4px; }
+  .toc-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .toc a { display: block; padding: 7px 10px; margin-left: -10px; border-radius: 7px; color: var(--muted); text-decoration: none; font-size: 0.88rem; }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--accent-ink); outline: none; }
+
+  main { min-width: 0; }
+  h1 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; font-size: 2.5rem; line-height: 1.12; margin: 0 0 12px; text-wrap: balance; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 40px; font-size: 0.86rem; color: var(--muted); }
+  .updated-badge { font-family: 'IBM Plex Mono', monospace; font-size: 0.76rem; background: var(--accent-soft); color: var(--accent-ink); padding: 3px 9px; border-radius: 999px; }
+  .lede { font-size: 1.08rem; color: var(--muted); max-width: 62ch; margin: 0 0 48px; }
+
+  section { margin-bottom: 44px; scroll-margin-top: 32px; }
+  h2 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 600; font-size: 1.5rem; margin: 0 0 16px; padding-top: 20px; border-top: 1px solid var(--line); text-wrap: balance; }
+  section:first-of-type h2 { border-top: none; padding-top: 0; }
+  p { max-width: 66ch; margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent-ink); }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 20px 0; }
+  .card { min-width: 0; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .card h3 { font-size: 0.78rem; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-ink); margin: 0 0 10px; }
+  .card ul { margin: 0; padding-left: 18px; }
+  .card li { margin-bottom: 6px; font-size: 0.94rem; }
+  .card li:last-child { margin-bottom: 0; }
+
+  .not-collected { border-left: 3px solid var(--line); padding: 4px 0 4px 16px; color: var(--muted); font-size: 0.94rem; margin: 18px 0; list-style: none; }
+  .not-collected li { margin-bottom: 4px; }
+
+  .service-list { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
+  .service { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; padding: 12px 16px; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; }
+  .service strong { font-size: 0.96rem; }
+  .service span { font-size: 0.86rem; color: var(--muted); }
+
+  .choices { padding-left: 20px; max-width: 66ch; }
+  .choices li { margin-bottom: 8px; }
+
+  .btn { display: inline-flex; align-items: center; padding: 10px 18px; border-radius: 999px; text-decoration: none; font-size: 0.92rem; font-weight: 500; background: var(--accent); border: 1px solid var(--accent); color: #fff; margin-top: 6px; }
+  .btn:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+  footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 0.84rem; color: var(--muted); }
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="Sections">
+    <p class="toc-label">Contents</p>
+    <ol>
+      <li><a href="#collect">What we collect</a></li>
+      <li><a href="#location">Your location</a></li>
+      <li><a href="#use">How it's used</a></li>
+      <li><a href="#store">Where it's stored</a></li>
+      <li><a href="#third-party">Third parties</a></li>
+      <li><a href="#choices">Your choices</a></li>
+      <li><a href="#retention">Retention &amp; deletion</a></li>
+      <li><a href="#children">Children</a></li>
+      <li><a href="#changes">Changes</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="brand">
+      <span class="brand-mark"><svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 22s-7.5-7-7.5-12.5a7.5 7.5 0 0 1 15 0C19.5 15 12 22 12 22zM9 9.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/></svg></span>
+      <span class="brand-name">FreeMind</span>
+    </div>
+
+    <h1>Privacy Policy</h1>
+    <div class="meta">
+      <span class="updated-badge">Last updated Nov 15, 2026</span>
+      <span>Applies to the FreeMind Android app, version 1.2 and later</span>
+    </div>
+    <p class="lede">FreeMind helps you find places, plan trips, save favorites, and get directions on a map. This policy says what the app collects, why, who else receives any of it, and how to remove it.</p>
+
+    <section id="collect">
+      <h2>What we collect</h2>
+      <p>Some data comes from your Google account at sign-in, some is saved to your FreeMind account as you use the app, and some never leaves your phone.</p>
+      <div class="card-grid">
+        <div class="card">
+          <h3>From sign-in</h3>
+          <ul>
+            <li>Email address</li>
+            <li>Display name</li>
+            <li>Profile photo address</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Saved to your account</h3>
+          <ul>
+            <li>Favorite places and your favorite lists</li>
+            <li>Saved trip plans: stops, notes, checklist, start date</li>
+            <li>Search history (the query, its mode and the top result), only while history is on</li>
+            <li>A notification token, so reminders can reach your phone</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Stays on your phone</h3>
+          <ul>
+            <li>Your unit, language, theme and default-city choices</li>
+            <li>Offline copies of saved plans and recent results</li>
+            <li>The trip shown on the home-screen widget</li>
+            <li>Your taste profile, if you turn personalisation on</li>
+          </ul>
+        </div>
+      </div>
+      <p><strong>Shared links and screenshots.</strong> When you share a link, caption or screenshot to FreeMind, the app reads it on your phone, including text recognition on screenshots, and looks up the place names it finds. The screenshot itself is not uploaded.</p>
+      <ul class="not-collected">
+        <li>No advertising, and no selling or sharing of your data for ads</li>
+        <li>No payment information: the app has no purchases</li>
+        <li>No contacts, microphone recordings or files, other than what you choose to share into the app. Voice search uses Android's own speech recognition.</li>
+        <li>No AI services: plans, language matching and suggestions are produced on your phone</li>
+      </ul>
+    </section>
+
+    <section id="location">
+      <h2>Your location</h2>
+      <p>Location is optional. If you allow it, the app uses it only while you are using the app, to show where you are on the map, sort places by distance, find places near you, show the weather, and draw directions from where you are. You can allow precise or approximate location, and you can turn it off in Android settings at any time.</p>
+      <p>Your position is read on your phone when you ask for something. It is sent as coordinates to Google (to search places and calculate routes) and to Open-Meteo (to get the forecast) so they can answer. It is not saved to your FreeMind account.</p>
+    </section>
+
+    <section id="use">
+      <h2>How it's used</h2>
+      <p>Only to run the app for you: showing your history, favorites and plans back to you, keeping you signed in, sending trip reminders you turned on, suggesting places based on what you saved if you turned personalisation on, and understanding in general how the app is used. We do not sell your data.</p>
+    </section>
+
+    <section id="store">
+      <h2>Where it's stored</h2>
+      <p>Account data is kept in a Supabase-hosted PostgreSQL database with row-level security on every table, so each request can only read and change the rows of the signed-in user. Sign-in is handled by Firebase Authentication. Data kept on your phone is not included in Android cloud backups or device transfers.</p>
+    </section>
+
+    <section id="third-party">
+      <h2>Third-party services</h2>
+      <div class="service-list">
+        <div class="service"><strong>Firebase (Google)</strong><span>Sign-in, notifications and usage analytics</span></div>
+        <div class="service"><strong>Google Maps Platform</strong><span>Map, place search, place details, photos and routes</span></div>
+        <div class="service"><strong>Open-Meteo</strong><span>Weather forecast for a map position</span></div>
+        <div class="service"><strong>Supabase</strong><span>Account data storage</span></div>
+        <div class="service"><strong>Google ML Kit</strong><span>Text recognition on your phone; nothing is sent</span></div>
+      </div>
+      <p>Each provider handles the data it receives under its own privacy policy. Firebase Analytics collects basic app-usage and device information, such as screens viewed and app version, linked to an app-instance identifier.</p>
+    </section>
+
+    <section id="choices">
+      <h2>Your choices</h2>
+      <ul class="choices">
+        <li><strong>Personalisation:</strong> off by default. Turn it on or off, and clear what it learned, in Settings → Personalisation.</li>
+        <li><strong>Search history:</strong> switch it off or clear it from the History tab or Settings.</li>
+        <li><strong>Export:</strong> download your saved plans from Settings.</li>
+        <li><strong>Location and notifications:</strong> change them in Android settings whenever you like.</li>
+        <li><strong>Delete everything:</strong> Settings → Delete account.</li>
+      </ul>
+    </section>
+
+    <section id="retention">
+      <h2>Retention &amp; deletion</h2>
+      <p>Your data stays until you remove it. You can permanently delete your account and everything tied to it from <strong>Settings → Delete account</strong>. This can't be undone. Instructions, including a way that doesn't need the app, are on the account deletion page.</p>
+      <a class="btn" href="account-deletion.html">How to delete your data</a>
+    </section>
+
+    <section id="children">
+      <h2>Children</h2>
+      <p>FreeMind isn't directed at children under 13, and we don't knowingly collect data from anyone under 13.</p>
+    </section>
+
+    <section id="changes">
+      <h2>Changes to this policy</h2>
+      <p>If this policy changes in a way that matters, we'll update the date at the top of this page and, for significant changes, tell you in the app.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>Questions about this policy or your data: <strong>kevinnassar80@gmail.com</strong></p>
+    </section>
+
+    <footer>FreeMind, Privacy Policy</footer>
+  </main>
+</div>
